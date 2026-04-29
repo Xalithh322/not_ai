@@ -468,6 +468,8 @@
             const abortControllerRef = useRef(null);
             const chatContainerRef = useRef(null);
             const isUserScrolledUp = useRef(false);
+            // ── FIX: track last scroll position to detect direction ──
+            const lastScrollTopRef = useRef(0);
             
             const t = translations[language];
 
@@ -572,11 +574,12 @@
                 }
             }, [chats, isChatsLoaded]);
 
+            // ── FIX: auto-scroll only when user hasn't scrolled up ──
             useEffect(() => {
                 if (!isUserScrolledUp.current && chatContainerRef.current) {
                     chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
                 }
-            }, [chats, isLoading]); 
+            }, [chats, isLoading]);
 
             useEffect(() => {
                 if (textareaRef.current) {
@@ -696,10 +699,20 @@
                 }
             };
 
+            // ── FIX: direction-aware scroll handler ──
             const handleChatScroll = () => {
-                if (chatContainerRef.current) {
-                    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-                    isUserScrolledUp.current = Math.ceil(scrollHeight - scrollTop - clientHeight) > 10;
+                if (!chatContainerRef.current) return;
+                const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+                const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+                const isScrollingUp = scrollTop < lastScrollTopRef.current;
+                lastScrollTopRef.current = scrollTop;
+
+                if (isScrollingUp && distanceFromBottom > 80) {
+                    // User deliberately scrolled up — pause auto-scroll
+                    isUserScrolledUp.current = true;
+                } else if (distanceFromBottom < 40) {
+                    // Close to bottom — resume auto-scroll
+                    isUserScrolledUp.current = false;
                 }
             };
 
@@ -795,7 +808,12 @@
             const sendMessage = async () => {
                 if ((!input.trim() && attachments.length === 0) || !apiKey) return;
                 
+                // ── FIX: always jump to bottom and unlock auto-scroll on send ──
                 isUserScrolledUp.current = false;
+                lastScrollTopRef.current = 0;
+                if (chatContainerRef.current) {
+                    chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+                }
                 
                 const userText = input;
                 const activeAttachments = [...attachments];
@@ -1306,7 +1324,6 @@
                                         )
                                     })
                                 )}
-                                <div ref={messagesEndRef} />
                             </div>
                         </div>
 
@@ -1343,7 +1360,6 @@
                                         <button onClick={sendMessage} disabled={!input.trim() && attachments.length === 0} className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full mr-1 transition-all mb-0.5 ${input.trim() || attachments.length > 0 ? 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]' : 'text-[var(--text-secondary)] opacity-50'}`} title={t.send}><Icon name="send-horizontal" className="w-5 h-5" /></button>
                                     )}
                                 </div>
-                                {!safeMode && <div className="text-center text-[10px] text-[var(--text-secondary)] mt-2">{t.disclaimer}</div>}
                             </div>
                         </div>
 
@@ -1413,16 +1429,6 @@
                                                         <button onClick={() => setTempTheme('dark')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempTheme === 'dark' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>Dark</button>
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
-                                    )
-                                })
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="absolute bottom-0 left-0 right-0 bg-[var(--bg-body)] p-4 pb-6">
-                        <div className="max-w-[760px] mx-auto relative">
                                                 <div>
                                                     <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.language}</label>
                                                     <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
