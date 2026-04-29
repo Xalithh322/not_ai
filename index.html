@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Workspace</title>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
+
+        :root {
+            --bg-body: #131314;
+            --bg-sidebar: #1e1f20;
+            --bg-surface: #1e1f20;
+            --bg-input: #1e1f20;
+            --bg-user-msg: #282a2c;
+            --text-primary: #e3e3e3;
+            --text-secondary: #c4c7c5;
+            --accent-blue: #a8c7fa;
+            --accent-button-bg: #e3e3e3;
+            --accent-button-text: #1f1f1f;
+            --border-color: #444746;
+            --hover-bg: #333537;
+            --tool-menu-bg: #28292a;
+            --btn-plus-bg: #282a2c;
+            --active-chat-bg: #6e6f70;
+            --active-chat-text: #fafbfc;
+            --safe-btn: #000000;
+        }
+
+        [data-theme="light"] {
+            --bg-body: #ffffff;
+            --bg-sidebar: #f0f4f9;
+            --bg-surface: #ffffff;
+            --bg-input: #f0f4f9;
+            --bg-user-msg: #e9eef6;
+            --text-primary: #1f1f1f;
+            --text-secondary: #444746;
+            --accent-blue: #0b57d0;
+            --accent-button-bg: #0b57d0;
+            --accent-button-text: #ffffff;
+            --border-color: #e0e3e7;
+            --hover-bg: #e9eef6;
+            --tool-menu-bg: #f0f4f9;
+            --btn-plus-bg: #e9eef6;
+            --active-chat-bg: #e8e8e8;
+            --active-chat-text: #0a0a0a;
+            --safe-btn: #e5e5e5;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            font-family: 'Google Sans', 'Roboto', sans-serif;
+            overflow: hidden;
+            transition: background-color 0.3s;
+        }
+
+        .markdown-body p { margin-bottom: 1rem; line-height: 1.6; color: var(--text-primary); }
+        .markdown-body pre {
+            background-color: var(--bg-sidebar);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid var(--border-color);
+        }
+        .markdown-body code {
+            font-family: 'Roboto Mono', monospace;
+            background-color: rgba(128,128,128,0.15);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #444746; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5e5e5e; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, Component } = React;
+
+        // --- Safe Icon Component ---
+        const Icon = ({ name, className }) => {
+            const spanRef = useRef(null);
+            useEffect(() => {
+                if (spanRef.current) {
+                    spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className}"></i>`;
+                    if (window.lucide) {
+                        window.lucide.createIcons({ root: spanRef.current });
+                    }
+                }
+            }, [name, className]);
+            return <span ref={spanRef} style={{ display: 'contents' }} />;
+        };
+
+        // --- Brand Icons ---
+        const GeminiIcon = ({ className }) => (
+            <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg" className={className} alt="Gemini" draggable="false" />
+        );
+
+        const ChatGPTIcon = ({ className }) => (
+            <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.073zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.5 2.6002 1.5v3.0043l-2.5998 1.5-2.6024-1.5z" />
+            </svg>
+        );
+
+        const ProviderIcon = ({ provider, className }) => {
+            if (provider === 'chatgpt') return <ChatGPTIcon className={className} />;
+            return <GeminiIcon className={className} />;
+        };
+
+        // --- IndexedDB Wrapper ---
+        const DB_NAME = 'GeminiChatDB';
+        const STORE_NAME = 'chats';
+        const DB_VERSION = 1;
+
+        const db = {
+            open: () => {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(DB_NAME, DB_VERSION);
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(STORE_NAME)) {
+                            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                        }
+                    };
+                    request.onsuccess = (e) => resolve(e.target.result);
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            },
+            saveChats: async (chats) => {
+                const database = await db.open();
+                return new Promise((resolve, reject) => {
+                    const tx = database.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    store.put({ id: 'all_chats', data: chats }); 
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = (e) => reject(e.target.error);
+                });
+            },
+            getChats: async () => {
+                const database = await db.open();
+                return new Promise((resolve, reject) => {
+                    const tx = database.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const request = store.get('all_chats');
+                    request.onsuccess = () => resolve(request.result ? request.result.data : []);
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            },
+            clear: async () => {
+                const database = await db.open();
+                return new Promise((resolve, reject) => {
+                    const tx = database.transaction(STORE_NAME, 'readwrite');
+                    tx.objectStore(STORE_NAME).clear();
+                    tx.oncomplete = () => resolve();
+                });
+            }
+        };
+
+        // --- Error Boundary ---
+        class ErrorBoundary extends Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null };
+            }
+            static getDerivedStateFromError(error) { return { hasError: true, error }; }
+            componentDidCatch(error, errorInfo) { console.error("React Error:", error, errorInfo); }
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div className="flex items-center justify-center h-screen flex-col text-red-400 p-4 text-center">
+                            <h2 className="text-2xl font-bold mb-2">Ошибка приложения</h2>
+                            <p className="text-sm opacity-80 mb-4">{String(this.state.error)}</p>
+                            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-[var(--accent-blue)] text-black rounded-full mt-4">Перезагрузить</button>
+                        </div>
+                    );
+                }
+                return this.props.children;
+            }
+        }
+
+        const translations = {
+            ru: {
+                newChat: 'Новый чат',
+                newChatSafe: 'Новая заметка',
+                recent: 'Недавние',
+                settings: 'Настройки',
+                officialSite: 'Официальный сайт OpenRouter',
+                greeting: 'Привет',
+                helpPrompt: 'Как я могу помочь тебе сегодня?',
+                guest: 'Гость',
+                createPhoto: 'Создать фото',
+                download: 'Скачать изображение',
+                thinking: 'Думаю...',
+                upload: 'Загрузить изображение',
+                tools: 'Выбрать инструмент',
+                send: 'Отправить',
+                stop: 'Остановить генерацию', 
+                inputPlaceholder: 'Напиши свой запрос...',
+                imagePlaceholder: 'Опиши изображение...',
+                disclaimer: 'ИИ может допускать ошибки. Всегда проверяй важную информацию.',
+                yourName: 'Твое имя',
+                theme: 'Тема',
+                language: 'Язык',
+                apiKey: 'OpenRouter API Key',
+                close: 'Закрыть',
+                cancel: 'Отмена',
+                save: 'Сохранить',
+                welcome: 'Добро пожаловать!',
+                askName: 'Как мне к тебе обращаться?',
+                namePlaceholder: 'Введи свое имя',
+                startChat: 'Начать общение',
+                modelFlash: 'Быстрая модель нового поколения',
+                modelPro: 'Самая мощная модель для сложных задач',
+                chatgptFlash: 'Оптимизированная и быстрая модель',
+                chatgptPro: 'Продвинутая модель с логическими цепочками',
+                connected: 'Сервер: Подключен',
+                imageGenerated: 'Изображение создано:',
+                imageGenFailed: 'Не удалось сгенерировать изображение.',
+                emptyResponse: 'Пустой ответ от сервера',
+                requestError: 'Ошибка запроса',
+                errorPrefix: 'Ошибка: ',
+                systemInstructions: 'Системные инструкции',
+                sysInstDescription: 'Укажи, как модель должна себя вести (например: "Ты опытный программист...").',
+                sysInstPlaceholder: 'Напиши инструкции здесь...',
+                storageUsed: 'Хранилище (IndexedDB)',
+                clearHistory: 'Очистить всю историю',
+                provider: 'Провайдер ИИ',
+                reqStopped: '⚠️ Запрос был остановлен.'
+            },
+            en: {
+                newChat: 'New Chat',
+                newChatSafe: 'New Note',
+                recent: 'Recent',
+                settings: 'Settings',
+                officialSite: 'OpenRouter Website',
+                greeting: 'Hello',
+                helpPrompt: 'How can I help you today?',
+                guest: 'Guest',
+                createPhoto: 'Create Image',
+                download: 'Download Image',
+                thinking: 'Thinking...',
+                upload: 'Upload Image',
+                tools: 'Choose Tool',
+                send: 'Send',
+                stop: 'Stop generating',
+                inputPlaceholder: 'Enter your prompt...',
+                imagePlaceholder: 'Describe the image...',
+                disclaimer: 'AI may make mistakes. Please double-check responses.',
+                yourName: 'Your Name',
+                theme: 'Theme',
+                language: 'Language',
+                apiKey: 'OpenRouter API Key',
+                close: 'Close',
+                cancel: 'Cancel',
+                save: 'Save',
+                welcome: 'Welcome!',
+                askName: 'What should I call you?',
+                namePlaceholder: 'Enter your name',
+                startChat: 'Start chatting',
+                modelFlash: 'Fast next-generation model',
+                modelPro: 'Most capable model for complex tasks',
+                chatgptFlash: 'Optimized and fast model',
+                chatgptPro: 'Advanced reasoning model',
+                connected: 'Server: Connected',
+                imageGenerated: 'Image generated:',
+                imageGenFailed: 'Failed to generate image.',
+                emptyResponse: 'Empty response',
+                requestError: 'Request error',
+                errorPrefix: 'Error: ',
+                systemInstructions: 'System Instructions',
+                sysInstDescription: 'Specify how the model should behave.',
+                sysInstPlaceholder: 'E.g., "You are an experienced programmer..."',
+                storageUsed: 'Storage (IndexedDB)',
+                clearHistory: 'Clear All History',
+                provider: 'AI Provider',
+                reqStopped: '⚠️ Request was stopped.'
+            }
+        };
+
+        const MarkdownRenderer = ({ content }) => {
+            const containerRef = useRef(null);
+            useEffect(() => {
+                if (!containerRef.current) return;
+                if (!content) {
+                    containerRef.current.innerHTML = '';
+                    return;
+                }
+                try {
+                    const safeContent = String(content);
+                    let html = marked.parse(safeContent);
+                    if (html instanceof Promise) html.then(res => containerRef.current.innerHTML = res);
+                    else containerRef.current.innerHTML = html;
+                } catch { 
+                    containerRef.current.innerText = String(content); 
+                }
+            }, [content]);
+            return <div ref={containerRef} className="markdown-body text-[15px] leading-7" />;
+        };
+
+        const App = () => {
+            const DEFAULT_KEY = "";
+            
+            // --- State ---
+            const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_user_api_key') || DEFAULT_KEY);
+            const [theme, setTheme] = useState(localStorage.getItem('gemini_theme') || 'dark');
+            const [language, setLanguage] = useState(localStorage.getItem('gemini_language') || 'ru');
+            const [nickname, setNickname] = useState(localStorage.getItem('gemini_nickname') || '');
+            const [systemInstruction, setSystemInstruction] = useState(localStorage.getItem('gemini_system_instruction') || '');
+            const [safeMode, setSafeMode] = useState(false); 
+            const [provider, setProvider] = useState(localStorage.getItem('app_provider') || 'gemini');
+            
+            // --- Chat Data State ---
+            const [chats, setChats] = useState([]);
+            const [isChatsLoaded, setIsChatsLoaded] = useState(false); 
+
+            // --- UI State ---
+            const [activeChatId, setActiveChatId] = useState(null);
+            const [input, setInput] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
+            const [isSidebarHovered, setIsSidebarHovered] = useState(false); 
+            const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+            const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
+            const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
+            const [isToolsOpen, setIsToolsOpen] = useState(false);
+            const [selectedImage, setSelectedImage] = useState(null);
+            
+            const [modelType, setModelType] = useState('flash');
+            const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
+            const [activeTool, setActiveTool] = useState(null); 
+
+            // Temp State for Settings
+            const [tempTheme, setTempTheme] = useState(theme);
+            const [tempLanguage, setTempLanguage] = useState(language);
+            const [tempNickname, setTempNickname] = useState(nickname);
+            const [tempApiKey, setTempApiKey] = useState(apiKey);
+            const [tempSystemInstruction, setTempSystemInstruction] = useState('');
+            const [tempProvider, setTempProvider] = useState(provider);
+
+            // Refs
+            const messagesEndRef = useRef(null);
+            const fileInputRef = useRef(null);
+            const textareaRef = useRef(null);
+            const abortControllerRef = useRef(null);
+            
+            const t = translations[language];
+
+            // --- Effects ---
+            useEffect(() => {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('gemini_theme', theme);
+            }, [theme]);
+            
+            useEffect(() => {
+                localStorage.setItem('gemini_language', language);
+                document.documentElement.lang = language;
+            }, [language]);
+
+            useEffect(() => {
+                const storedNick = localStorage.getItem('gemini_nickname');
+                if (!storedNick) setIsWelcomeModalOpen(true);
+                else setNickname(storedNick);
+            }, []);
+
+            useEffect(() => {
+                if (safeMode) document.title = "Dashboard";
+                else document.title = "AI Workspace";
+            }, [safeMode]);
+
+            // Load Chats
+            useEffect(() => {
+                const loadChats = async () => {
+                    try {
+                        const savedChats = await db.getChats();
+                        if (!savedChats || savedChats.length === 0) {
+                            const legacy = localStorage.getItem('gemini_chats_v4');
+                            if (legacy) {
+                                const parsedLegacy = JSON.parse(legacy);
+                                setChats(parsedLegacy);
+                                if (parsedLegacy.length) setActiveChatId(parsedLegacy[0].id);
+                                else createNewChat();
+                            } else {
+                                createNewChat();
+                            }
+                        } else {
+                            setChats(savedChats);
+                            if (savedChats.length) setActiveChatId(savedChats[0].id);
+                            else createNewChat();
+                        }
+                    } catch (e) {
+                        console.error("DB Load Error", e);
+                        createNewChat();
+                    } finally {
+                        setIsChatsLoaded(true);
+                    }
+                };
+                loadChats();
+            }, []);
+
+            // Save Chats
+            useEffect(() => {
+                if (isChatsLoaded) { 
+                    const timer = setTimeout(() => {
+                        db.saveChats(chats).catch(e => console.error("Save Error", e));
+                    }, 500); 
+                    return () => clearTimeout(timer);
+                }
+            }, [chats, isChatsLoaded]);
+
+            useEffect(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, [chats, isLoading]); 
+
+            useEffect(() => {
+                if (textareaRef.current) {
+                    textareaRef.current.style.height = 'auto';
+                    textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+                    if (!input) textareaRef.current.style.height = 'auto'; 
+                }
+            }, [input]);
+
+            const activeChat = useMemo(() => chats.find(c => c.id === activeChatId), [chats, activeChatId]);
+
+            const saveNickname = (name) => {
+                const finalName = name.trim() || t.guest;
+                setNickname(finalName);
+                localStorage.setItem('gemini_nickname', finalName);
+                setIsWelcomeModalOpen(false);
+            };
+
+            const openSettings = () => {
+                setTempTheme(theme);
+                setTempLanguage(language);
+                setTempNickname(nickname);
+                setTempApiKey(apiKey);
+                setTempProvider(provider);
+                setIsSettingsOpen(true);
+            };
+
+            const saveSettings = () => {
+                const finalName = tempNickname.trim() || t.guest;
+                setTheme(tempTheme);
+                setLanguage(tempLanguage);
+                setNickname(finalName);
+                setApiKey(tempApiKey);
+                setProvider(tempProvider);
+                localStorage.setItem('gemini_nickname', finalName);
+                localStorage.setItem('gemini_user_api_key', tempApiKey);
+                localStorage.setItem('app_provider', tempProvider);
+                setIsSettingsOpen(false);
+            };
+
+            const clearAllHistory = async () => {
+                if(confirm(language === 'ru' ? "Удалить ВСЮ историю из базы данных? Это нельзя отменить." : "Delete ALL history? This cannot be undone.")) {
+                    await db.clear();
+                    localStorage.removeItem('gemini_chats_v4'); 
+                    setChats([]);
+                    createNewChat();
+                    setIsSettingsOpen(false);
+                }
+            };
+
+            const openMemoryModal = () => {
+                setTempSystemInstruction(systemInstruction);
+                setIsSettingsOpen(false);
+                setIsMemoryModalOpen(true);
+            };
+
+            const saveMemory = () => {
+                setSystemInstruction(tempSystemInstruction);
+                localStorage.setItem('gemini_system_instruction', tempSystemInstruction);
+                setIsMemoryModalOpen(false);
+            };
+
+            const createNewChat = () => {
+                const currentChat = chats.find(c => c.id === activeChatId);
+                if (currentChat && currentChat.messages.length === 0) {
+                    setIsSidebarOpen(false);
+                    setInput('');
+                    setSelectedImage(null);
+                    setActiveTool(null);
+                    return; 
+                }
+                const newChat = { id: Date.now().toString(), title: t.newChat, messages: [], timestamp: Date.now() };
+                setChats(prev => [newChat, ...prev]);
+                setActiveChatId(newChat.id);
+                setIsSidebarOpen(false);
+                setActiveTool(null);
+            };
+
+            const handleSwitchChat = (targetId) => {
+                if (activeChatId === targetId) return; 
+                const currentChat = chats.find(c => c.id === activeChatId);
+                if (currentChat && currentChat.messages.length === 0) {
+                    setChats(prev => prev.filter(c => c.id !== activeChatId));
+                }
+                setActiveChatId(targetId);
+                setIsSidebarOpen(false);
+            };
+
+            const deleteChat = (e, id) => {
+                e.stopPropagation();
+                const filtered = chats.filter(c => c.id !== id);
+                setChats(filtered);
+                if (activeChatId === id) {
+                    if (filtered.length) setActiveChatId(filtered[0].id);
+                    else createNewChat();
+                }
+            };
+
+            const handleImageSelect = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setSelectedImage({ 
+                            file, 
+                            preview: reader.result, 
+                            base64: reader.result.split(',')[1], 
+                            mimeType: file.type 
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+                e.target.value = '';
+            };
+
+            const handlePaste = (e) => {
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        const file = items[i].getAsFile();
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                setSelectedImage({
+                                    file, preview: reader.result, base64: reader.result.split(',')[1], mimeType: file.type
+                                });
+                            };
+                            reader.readAsDataURL(file);
+                            e.preventDefault(); 
+                            return; 
+                        }
+                    }
+                }
+            };
+
+            const handleToolToggle = () => {
+                if (activeTool) setActiveTool(null);
+                else setIsToolsOpen(!isToolsOpen);
+            };
+
+            const handleStopGeneration = () => {
+                if (abortControllerRef.current) {
+                    abortControllerRef.current.abort();
+                    abortControllerRef.current = null;
+                    setIsLoading(false);
+                }
+            };
+
+            const generateChatTitle = async (chatId, userMessage) => {
+                try {
+                    const isGemini = provider === 'gemini';
+                    const modelName = isGemini ? 'google/gemini-3-flash-preview' : 'openai/gpt-5.4';
+                    const prompt = `Generate a very short, concise, and natural title (maximum 3-5 words) for a chat that starts with the message below. The title must be in the same language as the message. Do not use quotes. Message: "${userMessage.slice(0, 500)}"`;
+                    
+                    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json' 
+                        },
+                        body: JSON.stringify({ 
+                            model: modelName,
+                            messages: [{ role: 'user', content: prompt }]
+                        })
+                    });
+                    const data = await res.json();
+                    const newTitle = data.choices?.[0]?.message?.content?.trim()?.replace(/^["']|["']$/g, '');
+                    if (newTitle) setChats(prev => prev.map(c => c.id === chatId ? { ...c, title: newTitle } : c));
+                } catch (e) { console.error("Title Gen Error:", e); }
+            };
+
+            const sendMessage = async () => {
+                if ((!input.trim() && !selectedImage) || !apiKey) return;
+                const userText = input;
+                const img = selectedImage;
+                const currentTool = activeTool;
+                const isFirstMessage = activeChat?.messages.length === 0;
+                const currentChatId = activeChatId;
+                const currentProvider = provider; // Capture context
+
+                setChats(prev => prev.map(chat => {
+                    if (chat.id === activeChatId) {
+                        const title = chat.messages.length === 0 ? userText.slice(0, 30) : chat.title;
+                        return {
+                            ...chat, title, messages: [...chat.messages, { 
+                                role: 'user', text: userText, image: img?.preview, toolIcon: currentTool === 'image' ? 'palette' : null
+                            }]
+                        };
+                    }
+                    return chat;
+                }));
+
+                setInput(''); setSelectedImage(null); setActiveTool(null); setIsLoading(true);
+                if (isFirstMessage && userText) generateChatTitle(currentChatId, userText);
+
+                // Setup Abort Controller
+                const controller = new AbortController();
+                abortControllerRef.current = controller;
+
+                try {
+                    let responseText = "";
+                    let responseImage = null;
+
+                    if (currentTool === 'image') {
+                        // Image generation using OpenRouter
+                        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", { 
+                            method: 'POST', 
+                            headers: { 
+                                'Authorization': `Bearer ${apiKey}`,
+                                'HTTP-Referer': window.location.href,
+                                'X-Title': 'AI Workspace',
+                                'Content-Type': 'application/json' 
+                            }, 
+                            body: JSON.stringify({
+                                model: 'google/gemini-3.1-flash-image-preview',
+                                messages: [{ role: 'user', content: userText }]
+                            }),
+                            signal: controller.signal 
+                        });
+                        
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error?.message || t.requestError);
+                        
+                        responseText = data.choices?.[0]?.message?.content || t.emptyResponse;
+                    } else {
+                        // Text / Vision generation via OpenRouter
+                        const isGemini = provider === 'gemini';
+                        const modelName = isGemini
+                            ? (modelType === 'pro' ? 'google/gemini-3.1-pro-preview' : 'google/gemini-3-flash-preview')
+                            : (modelType === 'pro' ? 'openai/o1' : 'openai/gpt-5.4');
+                        const maxTokensLimit = isGemini ? 5000 : 4000;
+
+                        let openRouterMessages = [];
+                        
+                        if (systemInstruction.trim()) {
+                            openRouterMessages.push({ role: 'system', content: systemInstruction });
+                        }
+
+                        const history = activeChat?.messages.slice(-10) || [];
+                        for (const msg of history) {
+                            if (msg.role === 'user') {
+                                if (msg.image) {
+                                    openRouterMessages.push({
+                                        role: 'user',
+                                        content: [
+                                            { type: "text", text: msg.text || " " },
+                                            { type: "image_url", image_url: { url: msg.image } }
+                                        ]
+                                    });
+                                } else {
+                                    openRouterMessages.push({ role: 'user', content: msg.text || " " });
+                                }
+                            } else if (msg.role === 'model') {
+                                openRouterMessages.push({ role: 'assistant', content: msg.text || " " });
+                            }
+                        }
+
+                        if (img) {
+                            openRouterMessages.push({
+                                role: 'user',
+                                content: [
+                                    { type: "text", text: userText || " " },
+                                    { type: "image_url", image_url: { url: img.preview } }
+                                ]
+                            });
+                        } else {
+                            openRouterMessages.push({ role: 'user', content: userText });
+                        }
+
+                        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", { 
+                            method: 'POST', 
+                            headers: { 
+                                'Authorization': `Bearer ${apiKey}`,
+                                'HTTP-Referer': window.location.href,
+                                'X-Title': 'AI Workspace',
+                                'Content-Type': 'application/json' 
+                            }, 
+                            body: JSON.stringify({
+                                model: modelName,
+                                messages: openRouterMessages,
+                                max_tokens: maxTokensLimit
+                            }),
+                            signal: controller.signal
+                        });
+                        
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error?.message || t.requestError);
+                        
+                        responseText = data.choices?.[0]?.message?.content || t.emptyResponse;
+                    }
+                    
+                    setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { role: 'model', text: responseText, image: responseImage, provider: currentProvider }] } : c));
+                } catch (e) {
+                    if (e.name === 'AbortError') {
+                        console.log("Generation stopped");
+                        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { role: 'model', text: t.reqStopped, isError: true }] } : c));
+                    } else {
+                        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { role: 'model', text: `⚠️ ${t.errorPrefix}${e.message}`, isError: true }] } : c));
+                    }
+                } finally { 
+                    setIsLoading(false); 
+                    abortControllerRef.current = null;
+                }
+            };
+
+            const modelDisplay = provider === 'gemini' 
+                ? (modelType === 'pro' ? 'Pro 3.1' : 'Flash 3')
+                : (modelType === 'pro' ? 'o1' : 'GPT-5.4');
+            
+            const providerName = provider === 'gemini' ? 'Gemini' : 'ChatGPT';
+
+            return (
+                <div className="flex h-screen w-full text-[var(--text-primary)] bg-[var(--bg-body)] overflow-hidden">
+                    
+                    {/* SAFE MODE TOGGLE */}
+                    <button 
+                        onClick={() => setSafeMode(!safeMode)} 
+                        className="fixed bottom-0 right-0 w-6 h-6 z-[100] cursor-default opacity-5 hover:opacity-100 transition-opacity duration-500 bg-[var(--safe-btn)]"
+                        title="Toggle View"
+                    ></button>
+
+                    {/* HOVER TRIGGER ZONE (Only in Safe Mode) */}
+                    {safeMode && (
+                        <div 
+                            className="hidden md:block fixed top-0 left-0 w-4 h-full z-[60]"
+                            onMouseEnter={() => setIsSidebarHovered(true)}
+                        ></div>
+                    )}
+
+                    {/* SIDEBAR */}
+                    <aside 
+                        className={`
+                            fixed inset-y-0 left-0 z-50 w-[300px] bg-[var(--bg-sidebar)] transition-transform duration-300 flex flex-col border-r border-transparent
+                            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                            ${safeMode 
+                                ? `md:fixed ${isSidebarHovered ? 'md:translate-x-0 shadow-2xl' : 'md:-translate-x-[300px]'}` 
+                                : 'md:translate-x-0 md:static'
+                            }
+                        `}
+                        onMouseLeave={() => safeMode && setIsSidebarHovered(false)}
+                        onMouseEnter={() => safeMode && setIsSidebarHovered(true)}
+                    >
+                        <div className="p-4 pt-6">
+                            <button onClick={createNewChat} className="flex items-center gap-3 w-fit px-4 py-3 bg-[var(--hover-bg)] hover:bg-opacity-80 rounded-full transition-colors text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                                <Icon name={safeMode ? "edit-3" : "plus"} className="w-5 h-5" />
+                                <span className="pr-2">{safeMode ? t.newChatSafe : t.newChat}</span>
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto px-2 space-y-1">
+                            <div className="px-4 py-2 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">{t.recent}</div>
+                            {chats.map(chat => (
+                                <div key={chat.id} onClick={() => handleSwitchChat(chat.id)} className={`group flex items-center justify-between p-3 px-4 rounded-full cursor-pointer text-sm transition-all ${activeChatId === chat.id ? 'bg-[var(--active-chat-bg)] text-[var(--active-chat-text)] font-medium' : 'hover:bg-[var(--hover-bg)] text-[var(--text-primary)]'}`}>
+                                    <div className="flex items-center gap-3 truncate">
+                                        <Icon name={safeMode ? "file-text" : "message-square"} className="w-4 h-4 opacity-70" />
+                                        <span className="truncate max-w-[160px]">{chat.title || t.newChat}</span>
+                                    </div>
+                                    {activeChatId === chat.id && <button onClick={(e) => deleteChat(e, chat.id)} className="opacity-70 hover:opacity-100"><Icon name="trash-2" className="w-4 h-4" /></button>}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-4 mt-auto border-t border-[var(--border-color)]">
+                            <button onClick={openSettings} className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] transition-colors text-sm text-[var(--text-primary)]">
+                                <Icon name="settings" className="w-5 h-5 text-[var(--text-secondary)]" />
+                                <span>{t.settings}</span>
+                            </button>
+                            {!safeMode && (
+                                <div className="flex items-center gap-2 mt-2 px-3">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                    <span className="text-xs text-[var(--text-secondary)]">{t.storageUsed}</span>
+                                </div>
+                            )}
+                        </div>
+                    </aside>
+
+                    <main className="flex-1 flex flex-col relative h-full">
+                        <div className="md:hidden flex items-center justify-between p-4 bg-[var(--bg-body)]">
+                            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}><Icon name="menu" className="w-6 h-6 text-[var(--text-secondary)]" /></button>
+                            <span className="font-medium text-[var(--text-primary)]">{safeMode ? 'Workspace' : providerName}</span>
+                            <div className="w-8"></div> 
+                        </div>
+
+                        <div className="hidden md:flex justify-between items-center p-4 absolute top-0 left-0 right-0 z-10 bg-[var(--bg-body)]">
+                            <div className="relative">
+                                {safeMode ? (
+                                     <div className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)]">
+                                        <span className="text-lg font-medium">Workspace</span>
+                                     </div>
+                                ) : (
+                                    <button onClick={() => setIsModelMenuOpen(!isModelMenuOpen)} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                                        <ProviderIcon provider={provider} className={`w-5 h-5 ${provider === 'chatgpt' ? 'text-[#10a37f]' : ''}`} />
+                                        <span className="text-lg font-medium">{providerName}</span>
+                                        <span className={`text-sm px-2 py-0.5 rounded ${modelType === 'pro' ? 'bg-[var(--text-primary)] text-[var(--bg-body)]' : 'bg-[var(--border-color)] text-[var(--text-primary)]'}`}>{modelDisplay}</span>
+                                        <Icon name="chevron-down" className={`w-4 h-4 transition-transform ${isModelMenuOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                )}
+                                {isModelMenuOpen && !safeMode && (
+                                    <div className="absolute top-full left-0 mt-2 w-64 bg-[var(--tool-menu-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl p-2 z-50 animate-slide-up">
+                                        {provider === 'gemini' ? (
+                                            <>
+                                                <button onClick={() => { setModelType('flash'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash' ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                                    <GeminiIcon className="w-5 h-5 mt-0.5" />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemini 3 Flash</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.modelFlash}</div></div>
+                                                </button>
+                                                <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                                    <GeminiIcon className="w-5 h-5 mt-0.5" />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemini 3.1 Pro</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.modelPro}</div></div>
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button onClick={() => { setModelType('flash'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash' ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                                    <ChatGPTIcon className="w-5 h-5 mt-0.5 text-[#10a37f]" />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">ChatGPT 5.4</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.chatgptFlash}</div></div>
+                                                </button>
+                                                <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                                    <ChatGPTIcon className="w-5 h-5 mt-0.5 text-[#10a37f]" />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">ChatGPT o1</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.chatgptPro}</div></div>
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-4">
+                                {!safeMode && (
+                                    <a href="https://openrouter.ai" target="_blank" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" title={t.officialSite}>
+                                        <span className="text-sm font-medium">{t.officialSite}</span>
+                                        <Icon name="external-link" className="w-4 h-4" />
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32 scrollbar-hide">
+                            <div className="max-w-[700px] mx-auto">
+                                {!isChatsLoaded ? (
+                                    <div className="flex justify-center mt-20 text-[var(--text-secondary)]">{t.thinking}</div>
+                                ) : activeChat?.messages.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center mt-20 animate-slide-up">
+                                        {safeMode ? (
+                                            <div className="text-center opacity-30 mt-32">
+                                                 <Icon name="pen-tool" className="w-16 h-16 mx-auto mb-4" />
+                                                 <p>Начни печатать, чтобы создать заметку...</p>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <h1 className="text-5xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] mb-4 text-center">{t.greeting}, {nickname || t.guest}</h1>
+                                                <p className="text-2xl text-[var(--text-secondary)]">{t.helpPrompt}</p>
+                                            </>
+                                        )}
+                                    </div>
+                                ) : (
+                                    activeChat?.messages.map((msg, idx) => {
+                                        const isMsgGemini = msg.provider ? msg.provider === 'gemini' : provider === 'gemini';
+                                        
+                                        return (
+                                            <div key={idx} className="mb-8 animate-slide-up">
+                                                {msg.role === 'user' && (
+                                                    <div className="flex justify-end mb-2">
+                                                        <div className="bg-[var(--bg-user-msg)] text-[var(--text-primary)] rounded-[20px] rounded-br-[4px] px-5 py-3 max-w-[80%]">
+                                                            {msg.toolIcon && <div className="flex items-center gap-2 mb-2 text-xs text-[var(--accent-blue)]"><Icon name={msg.toolIcon} className="w-3 h-3" /><span>{msg.toolIcon === 'palette' ? t.createPhoto : ''}</span></div>}
+                                                            {msg.image && <img src={msg.image} className="max-w-full rounded-lg mb-2 border border-[var(--border-color)]" />}
+                                                            <div className="whitespace-pre-wrap break-words">{msg.text}</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {msg.role === 'model' && (
+                                                    <div className="flex gap-4">
+                                                        {!safeMode && (
+                                                            <div className="w-8 h-8 rounded-full flex-shrink-0 mt-1 flex items-center justify-center bg-[var(--bg-sidebar)]">
+                                                                <ProviderIcon provider={isMsgGemini ? 'gemini' : 'chatgpt'} className={`w-5 h-5 ${!isMsgGemini ? 'text-[#10a37f]' : ''}`} />
+                                                            </div>
+                                                        )}
+                                                        <div className={`flex-1 overflow-hidden ${msg.isError ? 'text-red-400' : 'text-[var(--text-primary)]'}`}>
+                                                            {msg.image && <div className="mb-4"><img src={msg.image} className="rounded-xl max-w-full shadow-lg border border-[var(--border-color)]" /><a href={msg.image} download="generated.png" className="text-sm text-[var(--accent-blue)] hover:underline mt-2 inline-block">{t.download}</a></div>}
+                                                            <MarkdownRenderer content={msg.text} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })
+                                )}
+                                {isLoading && !safeMode && <div className="flex gap-4 mt-4"><div className="w-8 h-8 flex items-center justify-center bg-[var(--bg-sidebar)] rounded-full"><ProviderIcon provider={provider} className={`w-5 h-5 animate-pulse ${provider === 'chatgpt' ? 'text-[#10a37f]' : ''}`} /></div><div className="text-[var(--text-secondary)] pt-1">{t.thinking}</div></div>}
+                                {isLoading && safeMode && <div className="flex gap-4 mt-4 text-[var(--text-secondary)] italic">...</div>}
+                                <div ref={messagesEndRef} />
+                            </div>
+                        </div>
+
+                        <div className="absolute bottom-0 left-0 right-0 bg-[var(--bg-body)] p-4 pb-6">
+                            <div className="max-w-[760px] mx-auto relative">
+                                {isToolsOpen && (
+                                    <div className="absolute bottom-full left-10 mb-4 bg-[var(--tool-menu-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl p-2 w-64 animate-slide-up z-50">
+                                        <button onClick={() => { setActiveTool('image'); setIsToolsOpen(false); }} className={`flex items-center gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${activeTool === 'image' ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                            <div className={`p-2 rounded-full ${theme === 'dark' ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-400/50 text-purple-600'}`}><Icon name="palette" className="w-4 h-4" /></div>
+                                            <div><div className="text-sm font-medium text-[var(--text-primary)]">{t.createPhoto}</div></div>
+                                        </button>
+                                    </div>
+                                )}
+                                {selectedImage && (
+                                    <div className="absolute bottom-full left-0 mb-3 ml-1 group z-20">
+                                        <div className="relative p-1 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-lg shadow-lg">
+                                            <img src={selectedImage.preview} className="w-14 h-14 rounded-md object-cover" />
+                                            <button onClick={() => setSelectedImage(null)} className="absolute -top-2 -right-2 w-5 h-5 bg-[#303030] border border-[#444746] rounded-full flex items-center justify-center text-[#e3e3e3] hover:text-white hover:bg-[#444746] shadow-sm z-30 cursor-pointer" title={t.close}><Icon name="x" className="w-3 h-3" /></button>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className={`flex items-end gap-2 bg-[var(--bg-input)] rounded-[28px] p-2 pl-2 pb-2 border-none focus-within:shadow-none transition-all ${activeTool ? 'ring-1 ring-[var(--accent-blue)]' : ''}`}>
+                                    <input type="file" ref={fileInputRef} onChange={handleImageSelect} accept="image/*" className="hidden" />
+                                    <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-[var(--btn-plus-bg)] rounded-full text-[var(--text-primary)] hover:opacity-80 transition-all ml-1" title={t.upload}><Icon name="plus" className="w-5 h-5" /></button>
+                                    <button onClick={handleToolToggle} className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full transition-colors ${activeTool ? 'bg-[var(--accent-blue)] text-[#000]' : 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`} title={t.tools}><Icon name="sliders-horizontal" className="w-5 h-5" /></button>
+                                    <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onPaste={handlePaste} onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder={activeTool === 'image' ? t.imagePlaceholder : t.inputPlaceholder} className="flex-1 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none resize-none py-2 px-2 min-h-[40px] max-h-[200px]" rows={1} style={{ height: 'auto' }} />
+                                    
+                                    {/* SEND / STOP BUTTON */}
+                                    {isLoading ? (
+                                        <button onClick={handleStopGeneration} className="p-2 rounded-full mr-1 transition-all text-red-400 hover:bg-red-500/20 animate-pulse flex items-center justify-center" title={t.stop}>
+                                            <div className="w-4 h-4 bg-red-400 rounded-[2px]"></div>
+                                        </button>
+                                    ) : (
+                                        <button onClick={sendMessage} disabled={!input.trim() && !selectedImage} className={`p-2 rounded-full mr-1 transition-all ${(input.trim() || selectedImage) ? 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]' : 'text-[var(--text-secondary)] opacity-50'}`} title={t.send}><Icon name="send-horizontal" className="w-6 h-6" /></button>
+                                    )}
+                                </div>
+                                <div className="text-center text-[10px] text-[var(--text-secondary)] mt-2">{t.disclaimer}</div>
+                            </div>
+                        </div>
+
+                        {/* Settings Modal */}
+                        {isSettingsOpen && (
+                            <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center" onClick={() => setIsSettingsOpen(false)}>
+                                <div className="bg-[var(--bg-surface)] p-6 rounded-2xl w-full max-w-md border border-[var(--border-color)] shadow-2xl" onClick={e => e.stopPropagation()}>
+                                    <h2 className="text-xl font-bold mb-4">{t.settings}</h2>
+                                    <div className="space-y-4">
+                                        <button 
+                                            onClick={openMemoryModal}
+                                            className="w-full flex items-center gap-3 p-4 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] rounded-xl transition-colors text-left border border-[var(--border-color)] group"
+                                        >
+                                            <div className="p-2 bg-blue-500/10 text-blue-400 rounded-full group-hover:bg-blue-500/20 transition-colors">
+                                                <Icon name="file-text" className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <div className="font-medium text-[var(--text-primary)]">{t.systemInstructions}</div>
+                                                <div className="text-xs text-[var(--text-secondary)]">{t.sysInstDescription}</div>
+                                            </div>
+                                            <Icon name="chevron-right" className="w-4 h-4 text-[var(--text-secondary)] ml-auto" />
+                                        </button>
+
+                                        <div className="h-px bg-[var(--border-color)] my-2"></div>
+
+                                        {/* ПРОВАЙДЕР */}
+                                        <div>
+                                            <label className="block text-sm mb-2 text-[var(--text-secondary)]">{t.provider}</label>
+                                            <div className="flex gap-2 p-1 bg-[var(--bg-sidebar)] rounded-lg border border-[var(--border-color)]">
+                                                <button onClick={() => setTempProvider('gemini')} className={`flex items-center justify-center gap-2 flex-1 py-2 rounded-md text-sm transition-all ${tempProvider === 'gemini' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
+                                                    <ProviderIcon provider="gemini" className="w-4 h-4" /> Gemini
+                                                </button>
+                                                <button onClick={() => setTempProvider('chatgpt')} className={`flex items-center justify-center gap-2 flex-1 py-2 rounded-md text-sm transition-all ${tempProvider === 'chatgpt' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
+                                                    <ProviderIcon provider="chatgpt" className={`w-4 h-4 ${tempProvider === 'chatgpt' ? 'text-[#10a37f]' : ''}`} /> ChatGPT
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div><label className="block text-sm mb-2 text-[var(--text-secondary)]">{t.yourName}</label><input type="text" value={tempNickname} onChange={e => setTempNickname(e.target.value)} className="w-full p-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-sm" /></div>
+                                        <div><label className="block text-sm mb-2 text-[var(--text-secondary)]">{t.theme}</label><div className="flex gap-2 p-1 bg-[var(--bg-sidebar)] rounded-lg border border-[var(--border-color)]"><button onClick={() => setTempTheme('light')} className={`flex-1 py-2 rounded-md text-sm ${tempTheme === 'light' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>Light</button><button onClick={() => setTempTheme('dark')} className={`flex-1 py-2 rounded-md text-sm ${tempTheme === 'dark' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>Dark</button></div></div>
+                                        <div><label className="block text-sm mb-2 text-[var(--text-secondary)]">{t.language}</label><div className="flex gap-2 p-1 bg-[var(--bg-sidebar)] rounded-lg border border-[var(--border-color)]"><button onClick={() => setTempLanguage('ru')} className={`flex-1 py-2 rounded-md text-sm ${tempLanguage === 'ru' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>Русский</button><button onClick={() => setTempLanguage('en')} className={`flex-1 py-2 rounded-md text-sm ${tempLanguage === 'en' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>English</button></div></div>
+                                        <div><label className="block text-sm mb-2 text-[var(--text-secondary)]">{t.apiKey}</label><input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} className="w-full p-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] font-mono text-sm" /></div>
+                                        
+                                        <button onClick={clearAllHistory} className="w-full p-3 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-sm border border-red-500/20">{t.clearHistory}</button>
+
+                                        <div className="flex justify-end gap-2 mt-6"><button onClick={() => setIsSettingsOpen(false)} className="px-4 py-2 text-[var(--text-primary)] hover:bg-[var(--hover-bg)] rounded-full">{t.close}</button><button onClick={saveSettings} className="px-4 py-2 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium hover:opacity-90">{t.save}</button></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* System Instructions / Memory Modal */}
+                        {isMemoryModalOpen && (
+                            <div className="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center" onClick={() => setIsMemoryModalOpen(false)}>
+                                <div className="bg-[var(--bg-surface)] p-0 rounded-2xl w-full max-w-2xl border border-[var(--border-color)] shadow-2xl flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
+                                    <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
+                                        <h2 className="text-xl font-bold">{t.systemInstructions}</h2>
+                                        <button onClick={() => setIsMemoryModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><Icon name="x" className="w-5 h-5" /></button>
+                                    </div>
+                                    <div className="p-6 flex-1 overflow-y-auto">
+                                        <textarea 
+                                            value={tempSystemInstruction} 
+                                            onChange={e => setTempSystemInstruction(e.target.value)} 
+                                            placeholder={t.sysInstPlaceholder}
+                                            className="w-full h-64 p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] resize-none leading-relaxed"
+                                            autoFocus
+                                        />
+                                        <p className="mt-4 text-sm text-[var(--text-secondary)]">
+                                            {t.sysInstDescription}
+                                        </p>
+                                    </div>
+                                    <div className="p-6 border-t border-[var(--border-color)] flex justify-end gap-2">
+                                        <button onClick={() => setIsMemoryModalOpen(false)} className="px-5 py-2.5 text-[var(--text-primary)] hover:bg-[var(--hover-bg)] rounded-full transition-colors">{t.cancel}</button>
+                                        <button onClick={saveMemory} className="px-5 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium hover:opacity-90 transition-opacity">{t.save}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {isWelcomeModalOpen && (
+                            <div className="fixed inset-0 bg-black/90 z-[150] flex items-center justify-center">
+                                <div className="bg-[var(--bg-surface)] p-8 rounded-2xl w-full max-w-md border border-[var(--border-color)] shadow-2xl text-center">
+                                    <div className="mb-6"><GeminiIcon className="w-12 h-12 mx-auto animate-pulse" /></div>
+                                    <h2 className="text-2xl font-bold mb-2">{t.welcome}</h2>
+                                    <p className="text-[var(--text-secondary)] mb-6">{t.askName}</p>
+                                    <input type="text" value={nickname} onChange={e => setNickname(e.target.value)} placeholder={t.namePlaceholder} className="w-full p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-center text-lg mb-6" onKeyDown={e => e.key === 'Enter' && saveNickname(nickname)} />
+                                    <button onClick={() => saveNickname(nickname)} className="w-full py-3 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium hover:opacity-90 transition-opacity">{t.startChat}</button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+            <ErrorBoundary>
+                <App />
+            </ErrorBoundary>
+        );
+    </script>
+</body>
+</html>
