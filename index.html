@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>not-ai.com</title>
+    <title>AI Workspace</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -388,7 +388,7 @@
                 descGemini: 'Universal Google models. Fast with large context window.',
                 descChatGPT: 'Powerful OpenAI models. Great for logic and code.',
                 descDeepSeek: 'Advanced models. Includes R1 – a deep reasoning model.',
-                descFree: 'Access to completely free models without consuming balance (pls use it if its not 90 pages of christopher math).',
+                descFree: 'Access to budget models with low balance consumption.',
                 settingsAI: 'AI & Behavior',
                 settingsAppearance: 'Appearance',
                 settingsData: 'Account Data',
@@ -467,6 +467,8 @@
             const messagesEndRef = useRef(null);
             const textareaRef = useRef(null);
             const abortControllerRef = useRef(null);
+            const chatContainerRef = useRef(null);
+            const isUserScrolledUp = useRef(false);
             
             const t = translations[language];
 
@@ -572,7 +574,9 @@
             }, [chats, isChatsLoaded]);
 
             useEffect(() => {
-                messagesEndRef.current?.scrollIntoView(); 
+                if (!isUserScrolledUp.current) {
+                    messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' }); 
+                }
             }, [chats, isLoading]); 
 
             useEffect(() => {
@@ -693,6 +697,30 @@
                 }
             };
 
+            const handleChatScroll = () => {
+                if (chatContainerRef.current) {
+                    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+                    isUserScrolledUp.current = scrollHeight - scrollTop - clientHeight > 100;
+                }
+            };
+
+            const handlePaste = (e) => {
+                const items = e.clipboardData?.items;
+                if (!items) return;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        const file = items[i].getAsFile();
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                setAttachments(prev => [...prev, { base64: event.target.result, name: file.name || 'image.png' }]);
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }
+                }
+            };
+
             const handleFileChange = (e) => {
                 const files = Array.from(e.target.files);
                 files.forEach(file => {
@@ -767,6 +795,8 @@
 
             const sendMessage = async () => {
                 if ((!input.trim() && attachments.length === 0) || !apiKey) return;
+                
+                isUserScrolledUp.current = false;
                 
                 const userText = input;
                 const activeAttachments = [...attachments];
@@ -1172,11 +1202,11 @@
                                                 </button>
                                                 <button onClick={() => { setModelType('gemma'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'gemma' ? 'bg-[var(--hover-bg)]' : ''}`}>
                                                     <GemmaIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'gemma'} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemma 4 31B</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.freeGemmaDesc}</div></div>
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemma 4</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.freeGemmaDesc}</div></div>
                                                 </button>
                                                 <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
                                                     <MetaIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'pro'} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Llama 3.3 70B</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.freeLlamaDesc}</div></div>
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Llama 3.3</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.freeLlamaDesc}</div></div>
                                                 </button>
                                             </>
                                         )}
@@ -1193,7 +1223,7 @@
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32 scrollbar-hide">
+                        <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32 scrollbar-hide" ref={chatContainerRef} onScroll={handleChatScroll}>
                             <div className="max-w-[700px] mx-auto">
                                 {!isChatsLoaded ? (
                                     <div className="flex justify-center mt-20 text-[var(--text-secondary)]">...</div>
@@ -1304,7 +1334,7 @@
                                     )}
                                     <input type="file" id="file-upload" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
 
-                                    <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder={t.inputPlaceholder} className="flex-1 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none resize-none py-2 px-1 min-h-[40px] max-h-[200px]" rows={1} style={{ height: 'auto' }} />
+                                    <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} onPaste={handlePaste} placeholder={t.inputPlaceholder} className="flex-1 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none resize-none py-2 px-1 min-h-[40px] max-h-[200px]" rows={1} style={{ height: 'auto' }} />
                                     
                                     {isGenerating ? (
                                         <button onClick={handleStopGeneration} className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full mr-1 transition-all text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 mb-0.5" title={t.stop}>
