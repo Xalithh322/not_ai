@@ -746,9 +746,9 @@
             };
 
             const generateChatTitle = async (chatId, userMessage) => {
-                try {
-                    const modelName = provider === 'gemini' ? 'google/gemini-3-flash-preview' : 'openai/gpt-4o-mini';
-                    const prompt = `Generate a very short, concise, and natural title (maximum 3-5 words) for a chat that starts with the message below. The title must be in the same language as the message. Do not use quotes. Message: "${userMessage.slice(0, 500)}"`;
+try {
+    const modelName = 'google/gemma-3-4b-it'; 
+    const prompt = `Generate a very short, concise, and natural title (maximum 3-5 words) for a chat that starts with the message below. The title must be in the same language as the message. Do not use quotes. Message: "${userMessage.slice(0, 500)}"`;
                     
                     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                         method: 'POST',
