@@ -464,7 +464,6 @@
             const [tempSystemInstruction, setTempSystemInstruction] = useState('');
             const [tempProvider, setTempProvider] = useState(provider);
 
-            const messagesEndRef = useRef(null);
             const textareaRef = useRef(null);
             const abortControllerRef = useRef(null);
             const chatContainerRef = useRef(null);
@@ -574,8 +573,8 @@
             }, [chats, isChatsLoaded]);
 
             useEffect(() => {
-                if (!isUserScrolledUp.current) {
-                    messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' }); 
+                if (!isUserScrolledUp.current && chatContainerRef.current) {
+                    chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
                 }
             }, [chats, isLoading]); 
 
@@ -700,7 +699,7 @@
             const handleChatScroll = () => {
                 if (chatContainerRef.current) {
                     const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-                    isUserScrolledUp.current = scrollHeight - scrollTop - clientHeight > 100;
+                    isUserScrolledUp.current = Math.ceil(scrollHeight - scrollTop - clientHeight) > 10;
                 }
             };
 
@@ -1414,6 +1413,16 @@
                                                         <button onClick={() => setTempTheme('dark')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempTheme === 'dark' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>Dark</button>
                                                     </div>
                                                 </div>
+                                            )}
+                                        </div>
+                                    )
+                                })
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="absolute bottom-0 left-0 right-0 bg-[var(--bg-body)] p-4 pb-6">
+                        <div className="max-w-[760px] mx-auto relative">
                                                 <div>
                                                     <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.language}</label>
                                                     <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
