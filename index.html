@@ -37,6 +37,7 @@
             --active-chat-bg: #6e6f70;
             --active-chat-text: #fafbfc;
             --safe-btn: #000000;
+            --cost-bg: rgba(255, 255, 255, 0.08);
         }
 
         [data-theme="light"] {
@@ -57,6 +58,7 @@
             --active-chat-bg: #e8e8e8;
             --active-chat-text: #0a0a0a;
             --safe-btn: #e5e5e5;
+            --cost-bg: rgba(0, 0, 0, 0.06);
         }
 
         body {
@@ -87,9 +89,13 @@
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
         
+        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: #444746; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #5e5e5e; }
+        
+        /* Slimmer scrollbar for modals */
+        .scrollbar-slim::-webkit-scrollbar { width: 4px; }
     </style>
 </head>
 <body>
@@ -98,34 +104,106 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo, Component } = React;
 
-        // --- Safe Icon Component ---
+        const APP_VERSION = "v3.2";
+
+        // --- Safe Icon Component (FIXED) ---
         const Icon = ({ name, className }) => {
             const spanRef = useRef(null);
+
             useEffect(() => {
-                if (spanRef.current) {
-                    spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className}"></i>`;
-                    if (window.lucide) {
+                const tryInit = () => {
+                    if (spanRef.current && window.lucide) {
+                        spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className || ''}"></i>`;
                         window.lucide.createIcons({ root: spanRef.current });
                     }
+                };
+
+                tryInit();
+
+                if (!window.lucide) {
+                    const t1 = setTimeout(tryInit, 100);
+                    const t2 = setTimeout(tryInit, 400);
+                    return () => { clearTimeout(t1); clearTimeout(t2); };
                 }
             }, [name, className]);
-            return <span ref={spanRef} style={{ display: 'contents' }} />;
+
+            return (
+                <span
+                    ref={spanRef}
+                    className="inline-flex items-center justify-center flex-shrink-0 leading-none"
+                />
+            );
         };
 
         // --- Brand Icons ---
-        const GeminiIcon = ({ className }) => (
-            <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg" className={className} alt="Gemini" draggable="false" />
+        const GeminiIcon = ({ className, active = true }) => (
+            <img 
+                src="https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg" 
+                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
+                alt="Gemini" 
+                draggable="false" 
+            />
         );
 
-        const ChatGPTIcon = ({ className }) => (
-            <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+        const ChatGPTIcon = ({ className, active = true }) => (
+            <svg viewBox="0 0 24 24" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40 text-gray-400' : 'text-[#10a37f]'}`} xmlns="http://www.w3.org/2000/svg" fill="currentColor">
                 <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.073zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.5 2.6002 1.5v3.0043l-2.5998 1.5-2.6024-1.5z" />
             </svg>
         );
 
-        const ProviderIcon = ({ provider, className }) => {
-            if (provider === 'chatgpt') return <ChatGPTIcon className={className} />;
-            return <GeminiIcon className={className} />;
+        const DeepSeekIcon = ({ className, active = true }) => (
+            <img 
+                src="https://i.ibb.co/vCC9PQ7S/image.png" 
+                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
+                alt="DeepSeek" 
+                draggable="false" 
+            />
+        );
+
+        const FreeOptionIcon = ({ className, active = true }) => (
+            <img 
+                src="https://i.ibb.co/3Yv1xq1K/image.png" 
+                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
+                alt="Free" 
+                draggable="false" 
+            />
+        );
+
+        const RouterIcon = ({ className, active = true, theme }) => (
+            <img 
+                src={theme === 'light' ? 'https://i.ibb.co/23g12YV6/image.png' : 'https://i.ibb.co/kssPJfdp/image.png'} 
+                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
+                alt="Router" 
+                draggable="false" 
+            />
+        );
+
+        const GemmaIcon = ({ className, active = true }) => (
+            <img 
+                src="https://i.ibb.co/G4Zdnf7Y/image.png" 
+                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
+                alt="Gemma" 
+                draggable="false" 
+            />
+        );
+
+        const MetaIcon = ({ className, active = true }) => (
+            <img 
+                src="https://i.ibb.co/Q7fB6grM/image.png" 
+                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
+                alt="Meta" 
+                draggable="false" 
+            />
+        );
+
+        const ProviderIcon = ({ provider, className, active = true, theme }) => {
+            if (provider === 'chatgpt') return <ChatGPTIcon className={className} active={active} />;
+            if (provider === 'deepseek') return <DeepSeekIcon className={className} active={active} />;
+            if (provider === 'free') return <FreeOptionIcon className={className} active={active} />;
+            if (provider === 'router') return <RouterIcon className={className} active={active} theme={theme} />;
+            if (provider === 'gemma') return <GemmaIcon className={className} active={active} />;
+            if (provider === 'meta') return <MetaIcon className={className} active={active} />;
+            return <GeminiIcon className={className} active={active} />;
         };
 
         // --- IndexedDB Wrapper ---
@@ -209,17 +287,13 @@
                 greeting: 'Привет',
                 helpPrompt: 'Как я могу помочь тебе сегодня?',
                 guest: 'Гость',
-                createPhoto: 'Создать фото',
-                download: 'Скачать изображение',
                 thinking: 'Думаю...',
-                upload: 'Загрузить изображение',
-                tools: 'Выбрать инструмент',
                 send: 'Отправить',
                 stop: 'Остановить генерацию', 
                 inputPlaceholder: 'Напиши свой запрос...',
-                imagePlaceholder: 'Опиши изображение...',
-                disclaimer: 'ИИ может допускать ошибки. Всегда проверяй важную информацию.',
                 yourName: 'Твое имя',
+                tabTitleSetting: 'Название вкладки',
+                tabTitlePlaceholder: 'AI Workspace',
                 theme: 'Тема',
                 language: 'Язык',
                 apiKey: 'OpenRouter API Key',
@@ -232,21 +306,35 @@
                 startChat: 'Начать общение',
                 modelFlash: 'Быстрая модель нового поколения',
                 modelPro: 'Самая мощная модель для сложных задач',
-                chatgptFlash: 'Оптимизированная и быстрая модель',
-                chatgptPro: 'Продвинутая модель с логическими цепочками',
+                chatgptFlash: 'Универсальная модель для повседневных дел',
+                chatgptPro: 'Логичный, для точных вычислений (Гораздо умнее 5.4 mini, но долго отвечает)',
+                deepseekChatDesc: 'Оптимальный баланс скорости и интеллекта',
+                deepseekR1Desc: 'Глубокое мышление для сложных задач',
+                freeModelsLabel: 'Дешевые модели',
+                freeAutoLabel: 'OpenRouter Auto',
+                freeAutoDesc: 'Автоматический поиск лучшей бюджетной нейросети',
+                freeGemmaDesc: 'Легкая и сообразительная модель от Google',
+                freeLlamaDesc: 'Надежная база для текстов любой сложности + Легкие задания по математике.',
                 connected: 'Сервер: Подключен',
-                imageGenerated: 'Изображение создано:',
-                imageGenFailed: 'Не удалось сгенерировать изображение.',
                 emptyResponse: 'Пустой ответ от сервера',
                 requestError: 'Ошибка запроса',
                 errorPrefix: 'Ошибка: ',
                 systemInstructions: 'Системные инструкции',
                 sysInstDescription: 'Укажи, как модель должна себя вести (например: "Ты опытный программист...").',
                 sysInstPlaceholder: 'Напиши инструкции здесь...',
-                storageUsed: 'Хранилище (IndexedDB)',
-                clearHistory: 'Очистить всю историю',
+                balanceLabel: 'Баланс:',
+                clearHistory: 'Очистить историю',
                 provider: 'Провайдер ИИ',
-                reqStopped: '⚠️ Запрос был остановлен.'
+                reqStopped: '⚠️ Запрос был остановлен.',
+                costLabel: 'Стоимость:',
+                descGemini: 'Универсальные модели от Google. Быстрые, с большим контекстом.',
+                descChatGPT: 'Мощные модели OpenAI. Отлично справляются с логикой и кодом.',
+                descDeepSeek: 'Продвинутые модели. Включает R1 — модель с глубоким рассуждением.',
+                descFree: 'Доступ к бюджетным моделям с низким расходом баланса API ключа.',
+                settingsAI: 'ИИ и поведение',
+                settingsAppearance: 'Внешний вид',
+                settingsData: 'Данные аккаунта',
+                attachPhoto: 'Прикрепить фото'
             },
             en: {
                 newChat: 'New Chat',
@@ -257,17 +345,13 @@
                 greeting: 'Hello',
                 helpPrompt: 'How can I help you today?',
                 guest: 'Guest',
-                createPhoto: 'Create Image',
-                download: 'Download Image',
                 thinking: 'Thinking...',
-                upload: 'Upload Image',
-                tools: 'Choose Tool',
                 send: 'Send',
                 stop: 'Stop generating',
                 inputPlaceholder: 'Enter your prompt...',
-                imagePlaceholder: 'Describe the image...',
-                disclaimer: 'AI may make mistakes. Please double-check responses.',
                 yourName: 'Your Name',
+                tabTitleSetting: 'Tab Title',
+                tabTitlePlaceholder: 'AI Workspace',
                 theme: 'Theme',
                 language: 'Language',
                 apiKey: 'OpenRouter API Key',
@@ -280,21 +364,35 @@
                 startChat: 'Start chatting',
                 modelFlash: 'Fast next-generation model',
                 modelPro: 'Most capable model for complex tasks',
-                chatgptFlash: 'Optimized and fast model',
-                chatgptPro: 'Advanced reasoning model',
+                chatgptFlash: 'Versatile model for everyday tasks',
+                chatgptPro: 'Logical, for precise calculations (Much smarter than 5.4 mini, but slower to respond)',
+                deepseekChatDesc: 'Optimal balance of speed and intelligence',
+                deepseekR1Desc: 'Deep reasoning for complex tasks',
+                freeModelsLabel: 'Cheap Models',
+                freeAutoLabel: 'OpenRouter Auto',
+                freeAutoDesc: 'Automatic search for the best budget neural network',
+                freeGemmaDesc: 'Lightweight and smart model from Google',
+                freeLlamaDesc: 'Reliable base for texts of any complexity + Easy math tasks.',
                 connected: 'Server: Connected',
-                imageGenerated: 'Image generated:',
-                imageGenFailed: 'Failed to generate image.',
                 emptyResponse: 'Empty response',
                 requestError: 'Request error',
                 errorPrefix: 'Error: ',
                 systemInstructions: 'System Instructions',
                 sysInstDescription: 'Specify how the model should behave.',
                 sysInstPlaceholder: 'E.g., "You are an experienced programmer..."',
-                storageUsed: 'Storage (IndexedDB)',
-                clearHistory: 'Clear All History',
+                balanceLabel: 'Balance:',
+                clearHistory: 'Clear History',
                 provider: 'AI Provider',
-                reqStopped: '⚠️ Request was stopped.'
+                reqStopped: '⚠️ Request was stopped.',
+                costLabel: 'Cost:',
+                descGemini: 'Universal Google models. Fast with large context window.',
+                descChatGPT: 'Powerful OpenAI models. Great for logic and code.',
+                descDeepSeek: 'Advanced models. Includes R1 – a deep reasoning model.',
+                descFree: 'Access to budget models with low balance consumption.',
+                settingsAI: 'AI & Behavior',
+                settingsAppearance: 'Appearance',
+                settingsData: 'Account Data',
+                attachPhoto: 'Attach photo'
             }
         };
 
@@ -315,58 +413,63 @@
                     containerRef.current.innerText = String(content); 
                 }
             }, [content]);
-            return <div ref={containerRef} className="markdown-body text-[15px] leading-7" />;
+            return <div ref={containerRef} className="markdown-body text-[15px] border-none leading-7" />;
         };
+
+        const BotIcon = ({ className }) => (
+            <svg className={className} viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="10" rx="2" ry="2"/>
+                <circle cx="12" cy="5" r="2"/>
+                <path d="M12 7v4"/>
+                <line x1="8" y1="16" x2="8" y2="16.01"/>
+                <line x1="16" y1="16" x2="16" y2="16.01"/>
+            </svg>
+        );
 
         const App = () => {
             const DEFAULT_KEY = "";
             
-            // --- State ---
             const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_user_api_key') || DEFAULT_KEY);
             const [theme, setTheme] = useState(localStorage.getItem('gemini_theme') || 'dark');
             const [language, setLanguage] = useState(localStorage.getItem('gemini_language') || 'ru');
             const [nickname, setNickname] = useState(localStorage.getItem('gemini_nickname') || '');
+            const [tabTitle, setTabTitle] = useState(localStorage.getItem('gemini_tab_title') || 'AI Workspace');
             const [systemInstruction, setSystemInstruction] = useState(localStorage.getItem('gemini_system_instruction') || '');
             const [safeMode, setSafeMode] = useState(false); 
             const [provider, setProvider] = useState(localStorage.getItem('app_provider') || 'gemini');
+            const [balanceData, setBalanceData] = useState(null);
             
-            // --- Chat Data State ---
             const [chats, setChats] = useState([]);
             const [isChatsLoaded, setIsChatsLoaded] = useState(false); 
 
-            // --- UI State ---
             const [activeChatId, setActiveChatId] = useState(null);
             const [input, setInput] = useState('');
-            const [isLoading, setIsLoading] = useState(false);
+            const [attachments, setAttachments] = useState([]);
+            const [isLoading, setIsLoading] = useState(false); 
+            const [isGenerating, setIsGenerating] = useState(false); 
             const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
             const [isSidebarHovered, setIsSidebarHovered] = useState(false); 
             const [isSettingsOpen, setIsSettingsOpen] = useState(false);
             const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
             const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
-            const [isToolsOpen, setIsToolsOpen] = useState(false);
-            const [selectedImage, setSelectedImage] = useState(null);
             
             const [modelType, setModelType] = useState('flash');
             const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
-            const [activeTool, setActiveTool] = useState(null); 
 
-            // Temp State for Settings
             const [tempTheme, setTempTheme] = useState(theme);
             const [tempLanguage, setTempLanguage] = useState(language);
             const [tempNickname, setTempNickname] = useState(nickname);
+            const [tempTabTitle, setTempTabTitle] = useState(tabTitle);
             const [tempApiKey, setTempApiKey] = useState(apiKey);
             const [tempSystemInstruction, setTempSystemInstruction] = useState('');
             const [tempProvider, setTempProvider] = useState(provider);
 
-            // Refs
             const messagesEndRef = useRef(null);
-            const fileInputRef = useRef(null);
             const textareaRef = useRef(null);
             const abortControllerRef = useRef(null);
             
             const t = translations[language];
 
-            // --- Effects ---
             useEffect(() => {
                 document.documentElement.setAttribute('data-theme', theme);
                 localStorage.setItem('gemini_theme', theme);
@@ -384,11 +487,52 @@
             }, []);
 
             useEffect(() => {
-                if (safeMode) document.title = "Dashboard";
-                else document.title = "AI Workspace";
-            }, [safeMode]);
+                if (safeMode) document.title = "Workspace";
+                else document.title = tabTitle || "AI Workspace";
+            }, [safeMode, tabTitle]);
 
-            // Load Chats
+            useEffect(() => {
+                if (isSettingsOpen || isMemoryModalOpen) {
+                    const timer = setTimeout(() => {
+                        if (window.lucide) {
+                            window.lucide.createIcons();
+                        }
+                    }, 50);
+                    return () => clearTimeout(timer);
+                }
+            }, [isSettingsOpen, isMemoryModalOpen]);
+
+            const fetchBalance = async () => {
+                if (!apiKey) {
+                    setBalanceData(null);
+                    return;
+                }
+                try {
+                    const res = await fetch("https://openrouter.ai/api/v1/auth/key", {
+                        method: 'GET',
+                        headers: { 
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json' 
+                        }
+                    });
+                    const data = await res.json();
+                    if (data && data.data) {
+                        const { limit, usage } = data.data;
+                        setBalanceData({
+                            limit: limit !== null ? Number(limit) : 0,
+                            usage: usage !== null ? Number(usage) : 0
+                        });
+                    }
+                } catch (e) {
+                    console.error("Balance fetch error:", e);
+                    setBalanceData(null);
+                }
+            };
+
+            useEffect(() => {
+                fetchBalance();
+            }, [apiKey]);
+
             useEffect(() => {
                 const loadChats = async () => {
                     try {
@@ -418,7 +562,6 @@
                 loadChats();
             }, []);
 
-            // Save Chats
             useEffect(() => {
                 if (isChatsLoaded) { 
                     const timer = setTimeout(() => {
@@ -429,7 +572,7 @@
             }, [chats, isChatsLoaded]);
 
             useEffect(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                messagesEndRef.current?.scrollIntoView(); 
             }, [chats, isLoading]); 
 
             useEffect(() => {
@@ -453,6 +596,7 @@
                 setTempTheme(theme);
                 setTempLanguage(language);
                 setTempNickname(nickname);
+                setTempTabTitle(tabTitle);
                 setTempApiKey(apiKey);
                 setTempProvider(provider);
                 setIsSettingsOpen(true);
@@ -460,15 +604,19 @@
 
             const saveSettings = () => {
                 const finalName = tempNickname.trim() || t.guest;
+                const finalTab = tempTabTitle.trim() || t.tabTitlePlaceholder;
                 setTheme(tempTheme);
                 setLanguage(tempLanguage);
                 setNickname(finalName);
+                setTabTitle(finalTab);
                 setApiKey(tempApiKey);
                 setProvider(tempProvider);
                 localStorage.setItem('gemini_nickname', finalName);
+                localStorage.setItem('gemini_tab_title', finalTab);
                 localStorage.setItem('gemini_user_api_key', tempApiKey);
                 localStorage.setItem('app_provider', tempProvider);
                 setIsSettingsOpen(false);
+                fetchBalance(); 
             };
 
             const clearAllHistory = async () => {
@@ -498,15 +646,12 @@
                 if (currentChat && currentChat.messages.length === 0) {
                     setIsSidebarOpen(false);
                     setInput('');
-                    setSelectedImage(null);
-                    setActiveTool(null);
                     return; 
                 }
                 const newChat = { id: Date.now().toString(), title: t.newChat, messages: [], timestamp: Date.now() };
                 setChats(prev => [newChat, ...prev]);
                 setActiveChatId(newChat.id);
                 setIsSidebarOpen(false);
-                setActiveTool(null);
             };
 
             const handleSwitchChat = (targetId) => {
@@ -529,60 +674,40 @@
                 }
             };
 
-            const handleImageSelect = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        setSelectedImage({ 
-                            file, 
-                            preview: reader.result, 
-                            base64: reader.result.split(',')[1], 
-                            mimeType: file.type 
-                        });
-                    };
-                    reader.readAsDataURL(file);
-                }
-                e.target.value = '';
-            };
-
-            const handlePaste = (e) => {
-                const items = e.clipboardData.items;
-                for (let i = 0; i < items.length; i++) {
-                    if (items[i].type.indexOf('image') !== -1) {
-                        const file = items[i].getAsFile();
-                        if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                                setSelectedImage({
-                                    file, preview: reader.result, base64: reader.result.split(',')[1], mimeType: file.type
-                                });
-                            };
-                            reader.readAsDataURL(file);
-                            e.preventDefault(); 
-                            return; 
-                        }
-                    }
-                }
-            };
-
-            const handleToolToggle = () => {
-                if (activeTool) setActiveTool(null);
-                else setIsToolsOpen(!isToolsOpen);
-            };
-
             const handleStopGeneration = () => {
                 if (abortControllerRef.current) {
                     abortControllerRef.current.abort();
                     abortControllerRef.current = null;
                     setIsLoading(false);
+                    setIsGenerating(false);
+                    setChats(prev => prev.map(c => {
+                        if (c.id === activeChatId) {
+                            const newMsgs = [...c.messages];
+                            if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].isThinking) {
+                                newMsgs[newMsgs.length - 1].isThinking = false;
+                            }
+                            return { ...c, messages: newMsgs };
+                        }
+                        return c;
+                    }));
                 }
+            };
+
+            const handleFileChange = (e) => {
+                const files = Array.from(e.target.files);
+                files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        setAttachments(prev => [...prev, { base64: event.target.result, name: file.name }]);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                e.target.value = null;
             };
 
             const generateChatTitle = async (chatId, userMessage) => {
                 try {
-                    const isGemini = provider === 'gemini';
-                    const modelName = isGemini ? 'google/gemini-3-flash-preview' : 'openai/gpt-5.4';
+                    const modelName = provider === 'gemini' ? 'google/gemini-3-flash-preview' : 'openai/gpt-4o-mini';
                     const prompt = `Generate a very short, concise, and natural title (maximum 3-5 words) for a chat that starts with the message below. The title must be in the same language as the message. Do not use quotes. Message: "${userMessage.slice(0, 500)}"`;
                     
                     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -602,157 +727,315 @@
                 } catch (e) { console.error("Title Gen Error:", e); }
             };
 
+            const pollCost = async (genId, chatId, messageIdx) => {
+                const maxAttempts = 50;
+                let currentAttempt = 0;
+
+                const check = async () => {
+                    if (currentAttempt >= maxAttempts) return;
+                    
+                    try {
+                        const costRes = await fetch(`https://openrouter.ai/api/v1/generation?id=${genId}`, {
+                            headers: { 'Authorization': `Bearer ${apiKey}` }
+                        });
+                        const costData = await costRes.json();
+                        const cost = costData.data?.total_cost;
+                        
+                        if (cost !== undefined && cost !== null && cost > 0) {
+                            setChats(prev => prev.map(c => {
+                                if (c.id === chatId) {
+                                    const newMessages = [...c.messages];
+                                    if (newMessages[messageIdx]) {
+                                        newMessages[messageIdx] = { ...newMessages[messageIdx], cost: cost };
+                                    }
+                                    return { ...c, messages: newMessages };
+                                }
+                                return c;
+                            }));
+                            return; 
+                        }
+                    } catch (err) {
+                        console.error("Cost polling error:", err);
+                    }
+
+                    currentAttempt++;
+                    setTimeout(check, 1000); 
+                };
+
+                check();
+            };
+
             const sendMessage = async () => {
-                if ((!input.trim() && !selectedImage) || !apiKey) return;
+                if ((!input.trim() && attachments.length === 0) || !apiKey) return;
+                
                 const userText = input;
-                const img = selectedImage;
-                const currentTool = activeTool;
+                const activeAttachments = [...attachments];
                 const isFirstMessage = activeChat?.messages.length === 0;
                 const currentChatId = activeChatId;
-                const currentProvider = provider; // Capture context
+                const currentProvider = provider;
+                const currentProviderName = providerName;
+
+                setInput(''); 
+                setAttachments([]);
+
+                if (activeAttachments.length > 0 && (currentProvider === 'deepseek' || (currentProvider === 'free' && modelType === 'flash'))) {
+                    setChats(prev => prev.map(chat => {
+                        if (chat.id === currentChatId) {
+                            const title = chat.messages.length === 0 ? "Изображение" : chat.title;
+                            return {
+                                ...chat,
+                                title,
+                                messages: [
+                                    ...chat.messages,
+                                    { role: 'user', text: userText, attachments: activeAttachments },
+                                    { 
+                                        role: 'model', 
+                                        text: language === 'ru' ? `⚠️ **Ошибка:** Выбранная нейросеть не поддерживает работу с фотографиями. Пожалуйста, отправляйте только текст или выберите другую модель (например, Gemini, ChatGPT, Llama 3.3 или Gemma 4).` : `⚠️ **Error:** The selected model does not support images. Please send text only or select another model (e.g., Gemini, ChatGPT, Llama 3.3, or Gemma 4).`,
+                                        isError: true, 
+                                        provider: currentProvider 
+                                    }
+                                ]
+                            };
+                        }
+                        return chat;
+                    }));
+                    return;
+                }
+
+                setIsLoading(true); 
+                setIsGenerating(true); 
 
                 setChats(prev => prev.map(chat => {
-                    if (chat.id === activeChatId) {
-                        const title = chat.messages.length === 0 ? userText.slice(0, 30) : chat.title;
+                    if (chat.id === currentChatId) {
+                        const title = chat.messages.length === 0 ? (userText.slice(0, 30) || "Image upload") : chat.title;
                         return {
-                            ...chat, title, messages: [...chat.messages, { 
-                                role: 'user', text: userText, image: img?.preview, toolIcon: currentTool === 'image' ? 'palette' : null
-                            }]
+                            ...chat, 
+                            title, 
+                            messages: [
+                                ...chat.messages, 
+                                { role: 'user', text: userText, attachments: activeAttachments },
+                                { role: 'model', text: '', isThinking: true, provider: currentProvider, modelType: modelType, actualModel: "", cost: 0 }
+                            ]
                         };
                     }
                     return chat;
                 }));
 
-                setInput(''); setSelectedImage(null); setActiveTool(null); setIsLoading(true);
                 if (isFirstMessage && userText) generateChatTitle(currentChatId, userText);
 
-                // Setup Abort Controller
                 const controller = new AbortController();
                 abortControllerRef.current = controller;
 
                 try {
-                    let responseText = "";
-                    let responseImage = null;
+                    let modelName = "";
+                    if (provider === 'gemini') {
+                        modelName = modelType === 'pro' ? 'google/gemini-3.1-pro-preview' : 'google/gemini-3-flash-preview';
+                    } else if (provider === 'chatgpt') {
+                        modelName = modelType === 'pro' ? 'openai/o4-mini' : 'openai/gpt-5.4-mini';
+                    } else if (provider === 'deepseek') {
+                        modelName = modelType === 'pro' ? 'deepseek/deepseek-r1' : 'deepseek/deepseek-chat-v3.1';
+                    } else if (provider === 'free') {
+                        if (modelType === 'pro') modelName = 'meta-llama/llama-3.3-70b-instruct';
+                        else if (modelType === 'gemma') modelName = 'google/gemma-4-31b-it';
+                        else modelName = 'openrouter/free';
+                    }
 
-                    if (currentTool === 'image') {
-                        // Image generation using OpenRouter
-                        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", { 
-                            method: 'POST', 
-                            headers: { 
-                                'Authorization': `Bearer ${apiKey}`,
-                                'HTTP-Referer': window.location.href,
-                                'X-Title': 'AI Workspace',
-                                'Content-Type': 'application/json' 
-                            }, 
-                            body: JSON.stringify({
-                                model: 'google/gemini-3.1-flash-image-preview',
-                                messages: [{ role: 'user', content: userText }]
-                            }),
-                            signal: controller.signal 
-                        });
-                        
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error?.message || t.requestError);
-                        
-                        responseText = data.choices?.[0]?.message?.content || t.emptyResponse;
-                    } else {
-                        // Text / Vision generation via OpenRouter
-                        const isGemini = provider === 'gemini';
-                        const modelName = isGemini
-                            ? (modelType === 'pro' ? 'google/gemini-3.1-pro-preview' : 'google/gemini-3-flash-preview')
-                            : (modelType === 'pro' ? 'openai/o1' : 'openai/gpt-5.4');
-                        const maxTokensLimit = isGemini ? 5000 : 4000;
+                    const maxTokensLimit = provider === 'gemini' ? 5000 : 4000;
 
-                        let openRouterMessages = [];
-                        
-                        if (systemInstruction.trim()) {
-                            openRouterMessages.push({ role: 'system', content: systemInstruction });
+                    let openRouterMessages = [];
+                    if (systemInstruction.trim()) {
+                        openRouterMessages.push({ role: 'system', content: systemInstruction });
+                    }
+
+                    const history = activeChat?.messages.slice(-10) || [];
+                    for (const msg of history) {
+                        if (msg.role === 'user') {
+                            let histContent;
+                            if (msg.attachments && msg.attachments.length > 0) {
+                                histContent = [];
+                                if (msg.text) histContent.push({ type: 'text', text: msg.text });
+                                msg.attachments.forEach(att => {
+                                    histContent.push({ type: 'image_url', image_url: { url: att.base64 } });
+                                });
+                            } else {
+                                histContent = msg.text || " ";
+                            }
+                            openRouterMessages.push({ role: 'user', content: histContent });
+                        } else if (msg.role === 'model') {
+                            openRouterMessages.push({ role: 'assistant', content: msg.text || " " });
                         }
+                    }
 
-                        const history = activeChat?.messages.slice(-10) || [];
-                        for (const msg of history) {
-                            if (msg.role === 'user') {
-                                if (msg.image) {
-                                    openRouterMessages.push({
-                                        role: 'user',
-                                        content: [
-                                            { type: "text", text: msg.text || " " },
-                                            { type: "image_url", image_url: { url: msg.image } }
-                                        ]
-                                    });
-                                } else {
-                                    openRouterMessages.push({ role: 'user', content: msg.text || " " });
+                    let currentContent;
+                    if (activeAttachments.length > 0) {
+                        currentContent = [];
+                        if (userText) currentContent.push({ type: 'text', text: userText });
+                        activeAttachments.forEach(att => {
+                            currentContent.push({ type: 'image_url', image_url: { url: att.base64 } });
+                        });
+                    } else {
+                        currentContent = userText;
+                    }
+                    openRouterMessages.push({ role: 'user', content: currentContent });
+
+                    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", { 
+                        method: 'POST', 
+                        headers: { 
+                            'Authorization': `Bearer ${apiKey}`,
+                            'HTTP-Referer': window.location.href,
+                            'X-Title': 'AI Workspace',
+                            'Content-Type': 'application/json' 
+                        }, 
+                        body: JSON.stringify({
+                            model: modelName,
+                            messages: openRouterMessages,
+                            max_tokens: maxTokensLimit,
+                            stream: true 
+                        }),
+                        signal: controller.signal
+                    });
+                    
+                    if (!res.ok) {
+                        const errorData = await res.json();
+                        throw new Error(errorData.error?.message || t.requestError);
+                    }
+
+                    let fullResponseText = "";
+                    let displayedText = "";
+                    let isStreamFinished = false;
+                    let genId = null;
+
+                    const updateUI = () => {
+                        if (displayedText.length < fullResponseText.length) {
+                            const diff = fullResponseText.length - displayedText.length;
+                            const charsToReveal = Math.max(1, Math.floor(diff / 3)); 
+                            displayedText = fullResponseText.slice(0, displayedText.length + charsToReveal);
+                            
+                            setChats(prev => prev.map(c => {
+                                if (c.id === currentChatId) {
+                                    const newMsgs = [...c.messages];
+                                    newMsgs[newMsgs.length - 1] = { ...newMsgs[newMsgs.length - 1], text: displayedText, isThinking: false };
+                                    return { ...c, messages: newMsgs };
                                 }
-                            } else if (msg.role === 'model') {
-                                openRouterMessages.push({ role: 'assistant', content: msg.text || " " });
+                                return c;
+                            }));
+                        }
+                        
+                        if (!isStreamFinished || displayedText.length < fullResponseText.length) {
+                            if (abortControllerRef.current === controller) {
+                                requestAnimationFrame(updateUI);
+                            }
+                        } else {
+                            setIsGenerating(false);
+                            if (abortControllerRef.current === controller) {
+                                abortControllerRef.current = null;
+                            }
+                            if (genId && currentProvider !== 'free') {
+                                setChats(prev => {
+                                     const chat = prev.find(c => c.id === currentChatId);
+                                     if (chat) setTimeout(() => pollCost(genId, currentChatId, chat.messages.length - 1), 0);
+                                     return prev;
+                                });
                             }
                         }
-
-                        if (img) {
-                            openRouterMessages.push({
-                                role: 'user',
-                                content: [
-                                    { type: "text", text: userText || " " },
-                                    { type: "image_url", image_url: { url: img.preview } }
-                                ]
-                            });
-                        } else {
-                            openRouterMessages.push({ role: 'user', content: userText });
-                        }
-
-                        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", { 
-                            method: 'POST', 
-                            headers: { 
-                                'Authorization': `Bearer ${apiKey}`,
-                                'HTTP-Referer': window.location.href,
-                                'X-Title': 'AI Workspace',
-                                'Content-Type': 'application/json' 
-                            }, 
-                            body: JSON.stringify({
-                                model: modelName,
-                                messages: openRouterMessages,
-                                max_tokens: maxTokensLimit
-                            }),
-                            signal: controller.signal
-                        });
-                        
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error?.message || t.requestError);
-                        
-                        responseText = data.choices?.[0]?.message?.content || t.emptyResponse;
-                    }
+                    };
                     
-                    setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { role: 'model', text: responseText, image: responseImage, provider: currentProvider }] } : c));
-                } catch (e) {
-                    if (e.name === 'AbortError') {
-                        console.log("Generation stopped");
-                        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { role: 'model', text: t.reqStopped, isError: true }] } : c));
-                    } else {
-                        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { role: 'model', text: `⚠️ ${t.errorPrefix}${e.message}`, isError: true }] } : c));
+                    requestAnimationFrame(updateUI);
+
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder("utf-8");
+                    let isFirstChunk = true;
+                    let buffer = "";
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop(); 
+                        
+                        for (const line of lines) {
+                            if (line.trim() === '') continue;
+                            if (line.startsWith('data: ')) {
+                                const dataStr = line.slice(6);
+                                if (dataStr.trim() === '[DONE]') continue;
+                                
+                                try {
+                                    const data = JSON.parse(dataStr);
+                                    if (!genId && data.id) genId = data.id;
+                                    
+                                    if (isFirstChunk) {
+                                        setIsLoading(false);
+                                        isFirstChunk = false;
+                                        setChats(prev => prev.map(c => {
+                                            if (c.id === currentChatId) {
+                                                const newMsgs = [...c.messages];
+                                                newMsgs[newMsgs.length - 1] = { ...newMsgs[newMsgs.length - 1], actualModel: data.model || "", isThinking: false };
+                                                return { ...c, messages: newMsgs };
+                                            }
+                                            return c;
+                                        }));
+                                    }
+
+                                    const delta = data.choices?.[0]?.delta?.content || "";
+                                    if (delta) {
+                                        fullResponseText += delta; 
+                                    }
+                                } catch (e) {
+                                }
+                            }
+                        }
                     }
+                    isStreamFinished = true;
+
+                } catch (e) {
+                    isStreamFinished = true;
+                    if (e.name === 'AbortError') {
+                        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { role: 'model', text: t.reqStopped, isError: true, isThinking: false }] } : c));
+                    } else {
+                        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { role: 'model', text: `⚠️ ${t.errorPrefix}${e.message}`, isError: true, isThinking: false }] } : c));
+                    }
+                    setIsGenerating(false);
                 } finally { 
                     setIsLoading(false); 
-                    abortControllerRef.current = null;
+                    fetchBalance(); 
                 }
             };
 
-            const modelDisplay = provider === 'gemini' 
-                ? (modelType === 'pro' ? 'Pro 3.1' : 'Flash 3')
-                : (modelType === 'pro' ? 'o1' : 'GPT-5.4');
+            const modelDisplay = useMemo(() => {
+                if (provider === 'gemini') return modelType === 'pro' ? 'Pro 3.1' : 'Flash 3';
+                if (provider === 'chatgpt') return modelType === 'pro' ? 'o4-mini' : '5.4-mini';
+                if (provider === 'deepseek') return modelType === 'pro' ? 'R1' : 'Chat V3.1';
+                if (provider === 'free') {
+                    if (modelType === 'pro') return 'Llama 3.3';
+                    if (modelType === 'gemma') return 'Gemma 4';
+                    return 'Auto';
+                }
+                return 'Flash';
+            }, [provider, modelType]);
             
-            const providerName = provider === 'gemini' ? 'Gemini' : 'ChatGPT';
+            const providerName = useMemo(() => {
+                if (provider === 'gemini') return 'Gemini';
+                if (provider === 'chatgpt') return 'ChatGPT';
+                if (provider === 'deepseek') return 'DeepSeek';
+                if (provider === 'free') return t.freeModelsLabel;
+                return 'Gemini';
+            }, [provider, t]);
+
+            const balancePercentage = useMemo(() => {
+                if (!balanceData || balanceData.limit <= 0) return 0;
+                return Math.min((balanceData.usage / balanceData.limit) * 100, 100);
+            }, [balanceData]);
 
             return (
                 <div className="flex h-screen w-full text-[var(--text-primary)] bg-[var(--bg-body)] overflow-hidden">
-                    
-                    {/* SAFE MODE TOGGLE */}
                     <button 
                         onClick={() => setSafeMode(!safeMode)} 
                         className="fixed bottom-0 right-0 w-6 h-6 z-[100] cursor-default opacity-5 hover:opacity-100 transition-opacity duration-500 bg-[var(--safe-btn)]"
                         title="Toggle View"
                     ></button>
 
-                    {/* HOVER TRIGGER ZONE (Only in Safe Mode) */}
                     {safeMode && (
                         <div 
                             className="hidden md:block fixed top-0 left-0 w-4 h-full z-[60]"
@@ -760,7 +1043,6 @@
                         ></div>
                     )}
 
-                    {/* SIDEBAR */}
                     <aside 
                         className={`
                             fixed inset-y-0 left-0 z-50 w-[300px] bg-[var(--bg-sidebar)] transition-transform duration-300 flex flex-col border-r border-transparent
@@ -791,17 +1073,38 @@
                                 </div>
                             ))}
                         </div>
-                        <div className="p-4 mt-auto border-t border-[var(--border-color)]">
+                        <div className="p-4 mt-auto border-t border-[var(--border-color)] flex flex-col">
                             <button onClick={openSettings} className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] transition-colors text-sm text-[var(--text-primary)]">
                                 <Icon name="settings" className="w-5 h-5 text-[var(--text-secondary)]" />
                                 <span>{t.settings}</span>
                             </button>
+                            
                             {!safeMode && (
-                                <div className="flex items-center gap-2 mt-2 px-3">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                    <span className="text-xs text-[var(--text-secondary)]">{t.storageUsed}</span>
+                                <div 
+                                    className="mt-4 px-3 flex flex-col gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={fetchBalance}
+                                    title="Нажмите, чтобы обновить"
+                                >
+                                    <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-secondary)]">
+                                        <span>{t.balanceLabel}</span>
+                                        <span>
+                                            {balanceData 
+                                                ? `$${balanceData.usage.toFixed(3)} / $${balanceData.limit.toFixed(0)}` 
+                                                : '...'}
+                                        </span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-[var(--border-color)] rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full bg-[var(--accent-blue)] transition-all duration-500 ease-out"
+                                            style={{ width: `${balancePercentage}%` }}
+                                        ></div>
+                                    </div>
                                 </div>
                             )}
+                            
+                            <div className="mt-6 text-center text-[10px] text-[var(--text-secondary)] opacity-40 font-mono tracking-widest cursor-default">
+                                {APP_VERSION}
+                            </div>
                         </div>
                     </aside>
 
@@ -820,34 +1123,60 @@
                                      </div>
                                 ) : (
                                     <button onClick={() => setIsModelMenuOpen(!isModelMenuOpen)} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                                        <ProviderIcon provider={provider} className={`w-5 h-5 ${provider === 'chatgpt' ? 'text-[#10a37f]' : ''}`} />
-                                        <span className="text-lg font-medium">{providerName}</span>
-                                        <span className={`text-sm px-2 py-0.5 rounded ${modelType === 'pro' ? 'bg-[var(--text-primary)] text-[var(--bg-body)]' : 'bg-[var(--border-color)] text-[var(--text-primary)]'}`}>{modelDisplay}</span>
-                                        <Icon name="chevron-down" className={`w-4 h-4 transition-transform ${isModelMenuOpen ? 'rotate-180' : ''}`} />
+                                        <ProviderIcon provider={provider} theme={theme} className={`w-5 h-5`} active={true} />
+                                        <span className="text-lg font-medium ml-2">{providerName}</span>
+                                        <span className={`text-sm px-2 py-0.5 rounded ml-2 ${modelType === 'pro' || modelType === 'gemma' ? 'bg-[var(--text-primary)] text-[var(--bg-body)]' : 'bg-[var(--border-color)] text-[var(--text-primary)]'}`}>{modelDisplay}</span>
+                                        <Icon name="chevron-down" className={`w-4 h-4 transition-transform ml-1 ${isModelMenuOpen ? 'rotate-180' : ''}`} />
                                     </button>
                                 )}
                                 {isModelMenuOpen && !safeMode && (
-                                    <div className="absolute top-full left-0 mt-2 w-64 bg-[var(--tool-menu-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl p-2 z-50 animate-slide-up">
+                                    <div className="absolute top-full left-0 mt-2 w-72 bg-[var(--tool-menu-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl p-2 z-50 animate-slide-up">
                                         {provider === 'gemini' ? (
                                             <>
                                                 <button onClick={() => { setModelType('flash'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <GeminiIcon className="w-5 h-5 mt-0.5" />
+                                                    <GeminiIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'flash'} />
                                                     <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemini 3 Flash</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.modelFlash}</div></div>
                                                 </button>
                                                 <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <GeminiIcon className="w-5 h-5 mt-0.5" />
+                                                    <GeminiIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'pro'} />
                                                     <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemini 3.1 Pro</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.modelPro}</div></div>
+                                                </button>
+                                            </>
+                                        ) : provider === 'chatgpt' ? (
+                                            <>
+                                                <button onClick={() => { setModelType('flash'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash' ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                                    <ChatGPTIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'flash'} />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">ChatGPT 5.4-mini</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.chatgptFlash}</div></div>
+                                                </button>
+                                                <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                                    <ChatGPTIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'pro'} />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">ChatGPT o4-mini</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.chatgptPro}</div></div>
+                                                </button>
+                                            </>
+                                        ) : provider === 'deepseek' ? (
+                                            <>
+                                                <button onClick={() => { setModelType('flash'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash' ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                                    <DeepSeekIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'flash'} />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">DeepSeek Chat</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.deepseekChatDesc}</div></div>
+                                                </button>
+                                                <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                                    <DeepSeekIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'pro'} />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">DeepSeek R1</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.deepseekR1Desc}</div></div>
                                                 </button>
                                             </>
                                         ) : (
                                             <>
                                                 <button onClick={() => { setModelType('flash'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <ChatGPTIcon className="w-5 h-5 mt-0.5 text-[#10a37f]" />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">ChatGPT 5.4</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.chatgptFlash}</div></div>
+                                                    <RouterIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'flash'} theme={theme} />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">{t.freeAutoLabel}</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.freeAutoDesc}</div></div>
+                                                </button>
+                                                <button onClick={() => { setModelType('gemma'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'gemma' ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                                    <GemmaIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'gemma'} />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemma 4 31B</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.freeGemmaDesc}</div></div>
                                                 </button>
                                                 <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <ChatGPTIcon className="w-5 h-5 mt-0.5 text-[#10a37f]" />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">ChatGPT o1</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.chatgptPro}</div></div>
+                                                    <MetaIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'pro'} />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Llama 3.3 70B</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.freeLlamaDesc}</div></div>
                                                 </button>
                                             </>
                                         )}
@@ -867,7 +1196,7 @@
                         <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32 scrollbar-hide">
                             <div className="max-w-[700px] mx-auto">
                                 {!isChatsLoaded ? (
-                                    <div className="flex justify-center mt-20 text-[var(--text-secondary)]">{t.thinking}</div>
+                                    <div className="flex justify-center mt-20 text-[var(--text-secondary)]">...</div>
                                 ) : activeChat?.messages.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center mt-20 animate-slide-up">
                                         {safeMode ? (
@@ -884,29 +1213,63 @@
                                     </div>
                                 ) : (
                                     activeChat?.messages.map((msg, idx) => {
-                                        const isMsgGemini = msg.provider ? msg.provider === 'gemini' : provider === 'gemini';
-                                        
+                                        let MsgIconProvider = msg.provider || provider;
+                                        if (msg.provider === 'free') {
+                                            if (msg.modelType === 'gemma') MsgIconProvider = 'gemma';
+                                            else if (msg.modelType === 'pro') MsgIconProvider = 'meta';
+                                            else MsgIconProvider = 'router';
+                                        }
+
                                         return (
                                             <div key={idx} className="mb-8 animate-slide-up">
                                                 {msg.role === 'user' && (
-                                                    <div className="flex justify-end mb-2">
-                                                        <div className="bg-[var(--bg-user-msg)] text-[var(--text-primary)] rounded-[20px] rounded-br-[4px] px-5 py-3 max-w-[80%]">
-                                                            {msg.toolIcon && <div className="flex items-center gap-2 mb-2 text-xs text-[var(--accent-blue)]"><Icon name={msg.toolIcon} className="w-3 h-3" /><span>{msg.toolIcon === 'palette' ? t.createPhoto : ''}</span></div>}
-                                                            {msg.image && <img src={msg.image} className="max-w-full rounded-lg mb-2 border border-[var(--border-color)]" />}
-                                                            <div className="whitespace-pre-wrap break-words">{msg.text}</div>
-                                                        </div>
+                                                    <div className="flex flex-col items-end mb-2">
+                                                        {msg.attachments && msg.attachments.length > 0 && (
+                                                            <div className="flex flex-wrap gap-2 justify-end mb-2 max-w-[80%]">
+                                                                {msg.attachments.map((att, i) => (
+                                                                    <img key={i} src={att.base64} className="max-w-[200px] max-h-[200px] object-cover rounded-2xl border border-[var(--border-color)] shadow-sm" alt="User upload" />
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {msg.text && (
+                                                            <div className="bg-[var(--bg-user-msg)] text-[var(--text-primary)] rounded-[20px] rounded-br-[4px] px-5 py-3 max-w-[80%]">
+                                                                <div className="whitespace-pre-wrap break-words">{msg.text}</div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                                 {msg.role === 'model' && (
-                                                    <div className="flex gap-4">
+                                                    <div className="flex gap-4 group">
                                                         {!safeMode && (
                                                             <div className="w-8 h-8 rounded-full flex-shrink-0 mt-1 flex items-center justify-center bg-[var(--bg-sidebar)]">
-                                                                <ProviderIcon provider={isMsgGemini ? 'gemini' : 'chatgpt'} className={`w-5 h-5 ${!isMsgGemini ? 'text-[#10a37f]' : ''}`} />
+                                                                <ProviderIcon provider={MsgIconProvider} theme={theme} className={`w-5 h-5`} />
                                                             </div>
                                                         )}
-                                                        <div className={`flex-1 overflow-hidden ${msg.isError ? 'text-red-400' : 'text-[var(--text-primary)]'}`}>
-                                                            {msg.image && <div className="mb-4"><img src={msg.image} className="rounded-xl max-w-full shadow-lg border border-[var(--border-color)]" /><a href={msg.image} download="generated.png" className="text-sm text-[var(--accent-blue)] hover:underline mt-2 inline-block">{t.download}</a></div>}
-                                                            <MarkdownRenderer content={msg.text} />
+                                                        <div className={`flex-1 overflow-visible relative ${msg.isError ? 'text-red-400' : 'text-[var(--text-primary)]'}`}>
+                                                            {!safeMode && MsgIconProvider === 'router' && msg.actualModel && (
+                                                                <div className="text-[10px] text-[var(--text-secondary)] mb-1 opacity-60 font-mono tracking-wide">
+                                                                    {msg.actualModel}
+                                                                </div>
+                                                            )}
+                                                            
+                                                            {msg.isThinking ? (
+                                                                <div className="flex items-center gap-1.5 h-7 px-2">
+                                                                    <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-bounce"></div>
+                                                                    <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
+                                                                    <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                                                                </div>
+                                                            ) : (
+                                                                <MarkdownRenderer content={msg.text} />
+                                                            )}
+                                                            
+                                                            {!safeMode && !msg.isError && !msg.isThinking && msg.provider !== 'free' && msg.cost > 0 && (
+                                                                <div className="mt-2 flex items-center gap-1.5 w-fit bg-[var(--cost-bg)] border border-[var(--border-color)] px-2 py-0.5 rounded-full transition-opacity duration-200 opacity-0 group-hover:opacity-100">
+                                                                    <Icon name="credit-card" className="w-3 h-3 text-[var(--text-secondary)]" />
+                                                                    <span className="text-[10px] font-mono text-[var(--text-secondary)] leading-none">
+                                                                        {msg.cost > 0 ? `$${msg.cost.toFixed(6)}` : '...'}
+                                                                    </span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}
@@ -914,104 +1277,159 @@
                                         )
                                     })
                                 )}
-                                {isLoading && !safeMode && <div className="flex gap-4 mt-4"><div className="w-8 h-8 flex items-center justify-center bg-[var(--bg-sidebar)] rounded-full"><ProviderIcon provider={provider} className={`w-5 h-5 animate-pulse ${provider === 'chatgpt' ? 'text-[#10a37f]' : ''}`} /></div><div className="text-[var(--text-secondary)] pt-1">{t.thinking}</div></div>}
-                                {isLoading && safeMode && <div className="flex gap-4 mt-4 text-[var(--text-secondary)] italic">...</div>}
                                 <div ref={messagesEndRef} />
                             </div>
                         </div>
 
                         <div className="absolute bottom-0 left-0 right-0 bg-[var(--bg-body)] p-4 pb-6">
                             <div className="max-w-[760px] mx-auto relative">
-                                {isToolsOpen && (
-                                    <div className="absolute bottom-full left-10 mb-4 bg-[var(--tool-menu-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl p-2 w-64 animate-slide-up z-50">
-                                        <button onClick={() => { setActiveTool('image'); setIsToolsOpen(false); }} className={`flex items-center gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${activeTool === 'image' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                            <div className={`p-2 rounded-full ${theme === 'dark' ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-400/50 text-purple-600'}`}><Icon name="palette" className="w-4 h-4" /></div>
-                                            <div><div className="text-sm font-medium text-[var(--text-primary)]">{t.createPhoto}</div></div>
+                                {attachments.length > 0 && (
+                                    <div className="flex gap-3 mb-3 px-2 overflow-x-auto scrollbar-slim">
+                                        {attachments.map((att, i) => (
+                                            <div key={i} className="relative w-16 h-16 flex-shrink-0 group">
+                                                <img src={att.base64} className="w-full h-full object-cover rounded-xl border border-[var(--border-color)]" alt="attachment" />
+                                                <button onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                                                    <Icon name="x" className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className={`flex items-end gap-2 bg-[var(--bg-input)] rounded-[28px] p-2 pl-4 pb-2 border-none focus-within:shadow-none transition-all`}>
+                                    {!safeMode && (
+                                        <button onClick={() => document.getElementById('file-upload').click()} className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)] transition-colors mb-0.5" title={t.attachPhoto}>
+                                            <Icon name="paperclip" className="w-5 h-5" />
                                         </button>
-                                    </div>
-                                )}
-                                {selectedImage && (
-                                    <div className="absolute bottom-full left-0 mb-3 ml-1 group z-20">
-                                        <div className="relative p-1 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-lg shadow-lg">
-                                            <img src={selectedImage.preview} className="w-14 h-14 rounded-md object-cover" />
-                                            <button onClick={() => setSelectedImage(null)} className="absolute -top-2 -right-2 w-5 h-5 bg-[#303030] border border-[#444746] rounded-full flex items-center justify-center text-[#e3e3e3] hover:text-white hover:bg-[#444746] shadow-sm z-30 cursor-pointer" title={t.close}><Icon name="x" className="w-3 h-3" /></button>
-                                        </div>
-                                    </div>
-                                )}
-                                <div className={`flex items-end gap-2 bg-[var(--bg-input)] rounded-[28px] p-2 pl-2 pb-2 border-none focus-within:shadow-none transition-all ${activeTool ? 'ring-1 ring-[var(--accent-blue)]' : ''}`}>
-                                    <input type="file" ref={fileInputRef} onChange={handleImageSelect} accept="image/*" className="hidden" />
-                                    <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-[var(--btn-plus-bg)] rounded-full text-[var(--text-primary)] hover:opacity-80 transition-all ml-1" title={t.upload}><Icon name="plus" className="w-5 h-5" /></button>
-                                    <button onClick={handleToolToggle} className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full transition-colors ${activeTool ? 'bg-[var(--accent-blue)] text-[#000]' : 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`} title={t.tools}><Icon name="sliders-horizontal" className="w-5 h-5" /></button>
-                                    <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onPaste={handlePaste} onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder={activeTool === 'image' ? t.imagePlaceholder : t.inputPlaceholder} className="flex-1 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none resize-none py-2 px-2 min-h-[40px] max-h-[200px]" rows={1} style={{ height: 'auto' }} />
+                                    )}
+                                    <input type="file" id="file-upload" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
+
+                                    <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder={t.inputPlaceholder} className="flex-1 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none resize-none py-2 px-1 min-h-[40px] max-h-[200px]" rows={1} style={{ height: 'auto' }} />
                                     
-                                    {/* SEND / STOP BUTTON */}
-                                    {isLoading ? (
-                                        <button onClick={handleStopGeneration} className="p-2 rounded-full mr-1 transition-all text-red-400 hover:bg-red-500/20 animate-pulse flex items-center justify-center" title={t.stop}>
-                                            <div className="w-4 h-4 bg-red-400 rounded-[2px]"></div>
+                                    {isGenerating ? (
+                                        <button onClick={handleStopGeneration} className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full mr-1 transition-all text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 mb-0.5" title={t.stop}>
+                                            <div className="w-4 h-4 bg-current rounded-[2px]"></div>
                                         </button>
                                     ) : (
-                                        <button onClick={sendMessage} disabled={!input.trim() && !selectedImage} className={`p-2 rounded-full mr-1 transition-all ${(input.trim() || selectedImage) ? 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]' : 'text-[var(--text-secondary)] opacity-50'}`} title={t.send}><Icon name="send-horizontal" className="w-6 h-6" /></button>
+                                        <button onClick={sendMessage} disabled={!input.trim() && attachments.length === 0} className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full mr-1 transition-all mb-0.5 ${input.trim() || attachments.length > 0 ? 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]' : 'text-[var(--text-secondary)] opacity-50'}`} title={t.send}><Icon name="send-horizontal" className="w-5 h-5" /></button>
                                     )}
                                 </div>
-                                <div className="text-center text-[10px] text-[var(--text-secondary)] mt-2">{t.disclaimer}</div>
+                                {!safeMode && <div className="text-center text-[10px] text-[var(--text-secondary)] mt-2">{t.disclaimer}</div>}
                             </div>
                         </div>
 
-                        {/* Settings Modal */}
                         {isSettingsOpen && (
-                            <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center" onClick={() => setIsSettingsOpen(false)}>
-                                <div className="bg-[var(--bg-surface)] p-6 rounded-2xl w-full max-w-md border border-[var(--border-color)] shadow-2xl" onClick={e => e.stopPropagation()}>
-                                    <h2 className="text-xl font-bold mb-4">{t.settings}</h2>
-                                    <div className="space-y-4">
-                                        <button 
-                                            onClick={openMemoryModal}
-                                            className="w-full flex items-center gap-3 p-4 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] rounded-xl transition-colors text-left border border-[var(--border-color)] group"
-                                        >
-                                            <div className="p-2 bg-blue-500/10 text-blue-400 rounded-full group-hover:bg-blue-500/20 transition-colors">
-                                                <Icon name="file-text" className="w-5 h-5" />
-                                            </div>
+                            <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 sm:p-6" onClick={() => setIsSettingsOpen(false)}>
+                                <div className="bg-[var(--bg-surface)] rounded-2xl w-full max-w-lg border border-[var(--border-color)] shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                                    <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-surface)] rounded-t-2xl z-10">
+                                        <h2 className="text-xl font-bold">{t.settings}</h2>
+                                        <button onClick={() => setIsSettingsOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 rounded-full hover:bg-[var(--hover-bg)] transition-colors"><Icon name="x" className="w-5 h-5" /></button>
+                                    </div>
+                                    
+                                    <div className="p-6 overflow-y-auto space-y-8 scrollbar-slim">
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsAI}</h3>
+                                            
+                                            <button 
+                                                onClick={openMemoryModal}
+                                                className="w-full flex items-center gap-4 p-4 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] rounded-xl transition-all text-left border border-[var(--border-color)] group"
+                                            >
+                                                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl transition-colors" style={{background: 'color-mix(in srgb, var(--accent-blue) 15%, transparent)'}}>
+                                                    <BotIcon className="w-5 h-5" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-[var(--text-primary)]">{t.systemInstructions}</div>
+                                                    <div className="text-xs text-[var(--text-secondary)] mt-0.5">{t.sysInstDescription}</div>
+                                                </div>
+                                                <div className="flex-shrink-0">
+                                                    <Icon name="chevron-right" className="w-4 h-4 text-[var(--text-secondary)]" />
+                                                </div>
+                                            </button>
+
                                             <div>
-                                                <div className="font-medium text-[var(--text-primary)]">{t.systemInstructions}</div>
-                                                <div className="text-xs text-[var(--text-secondary)]">{t.sysInstDescription}</div>
-                                            </div>
-                                            <Icon name="chevron-right" className="w-4 h-4 text-[var(--text-secondary)] ml-auto" />
-                                        </button>
-
-                                        <div className="h-px bg-[var(--border-color)] my-2"></div>
-
-                                        {/* ПРОВАЙДЕР */}
-                                        <div>
-                                            <label className="block text-sm mb-2 text-[var(--text-secondary)]">{t.provider}</label>
-                                            <div className="flex gap-2 p-1 bg-[var(--bg-sidebar)] rounded-lg border border-[var(--border-color)]">
-                                                <button onClick={() => setTempProvider('gemini')} className={`flex items-center justify-center gap-2 flex-1 py-2 rounded-md text-sm transition-all ${tempProvider === 'gemini' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
-                                                    <ProviderIcon provider="gemini" className="w-4 h-4" /> Gemini
-                                                </button>
-                                                <button onClick={() => setTempProvider('chatgpt')} className={`flex items-center justify-center gap-2 flex-1 py-2 rounded-md text-sm transition-all ${tempProvider === 'chatgpt' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>
-                                                    <ProviderIcon provider="chatgpt" className={`w-4 h-4 ${tempProvider === 'chatgpt' ? 'text-[#10a37f]' : ''}`} /> ChatGPT
-                                                </button>
+                                                <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.provider}</label>
+                                                <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
+                                                    <button onClick={() => setTempProvider('gemini')} className={`flex items-center justify-center py-2 flex-1 rounded-lg transition-all ${tempProvider === 'gemini' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)]' : 'opacity-50 hover:opacity-100 hover:bg-[var(--hover-bg)]'}`} title="Gemini">
+                                                        <ProviderIcon provider="gemini" theme={tempTheme} className="w-5 h-5" active={tempProvider === 'gemini'} />
+                                                    </button>
+                                                    <button onClick={() => setTempProvider('chatgpt')} className={`flex items-center justify-center py-2 flex-1 rounded-lg transition-all ${tempProvider === 'chatgpt' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)]' : 'opacity-50 hover:opacity-100 hover:bg-[var(--hover-bg)]'}`} title="ChatGPT">
+                                                        <ProviderIcon provider="chatgpt" theme={tempTheme} className="w-5 h-5" active={tempProvider === 'chatgpt'} />
+                                                    </button>
+                                                    <button onClick={() => setTempProvider('deepseek')} className={`flex items-center justify-center py-2 flex-1 rounded-lg transition-all ${tempProvider === 'deepseek' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)]' : 'opacity-50 hover:opacity-100 hover:bg-[var(--hover-bg)]'}`} title="DeepSeek">
+                                                        <ProviderIcon provider="deepseek" theme={tempTheme} className="w-5 h-5" active={tempProvider === 'deepseek'} />
+                                                    </button>
+                                                    <button onClick={() => setTempProvider('free')} className={`flex items-center justify-center py-2 flex-1 rounded-lg transition-all ${tempProvider === 'free' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)]' : 'opacity-50 hover:opacity-100 hover:bg-[var(--hover-bg)]'}`} title={t.freeModelsLabel}>
+                                                        <ProviderIcon provider="free" theme={tempTheme} className="w-5 h-5" active={tempProvider === 'free'} />
+                                                    </button>
+                                                </div>
+                                                <div className="text-xs text-[var(--text-secondary)] mt-3 leading-relaxed bg-[var(--bg-input)] p-3 rounded-lg border border-[var(--border-color)]">
+                                                    {tempProvider === 'gemini' && t.descGemini}
+                                                    {tempProvider === 'chatgpt' && t.descChatGPT}
+                                                    {tempProvider === 'deepseek' && t.descDeepSeek}
+                                                    {tempProvider === 'free' && t.descFree}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div><label className="block text-sm mb-2 text-[var(--text-secondary)]">{t.yourName}</label><input type="text" value={tempNickname} onChange={e => setTempNickname(e.target.value)} className="w-full p-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-sm" /></div>
-                                        <div><label className="block text-sm mb-2 text-[var(--text-secondary)]">{t.theme}</label><div className="flex gap-2 p-1 bg-[var(--bg-sidebar)] rounded-lg border border-[var(--border-color)]"><button onClick={() => setTempTheme('light')} className={`flex-1 py-2 rounded-md text-sm ${tempTheme === 'light' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>Light</button><button onClick={() => setTempTheme('dark')} className={`flex-1 py-2 rounded-md text-sm ${tempTheme === 'dark' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>Dark</button></div></div>
-                                        <div><label className="block text-sm mb-2 text-[var(--text-secondary)]">{t.language}</label><div className="flex gap-2 p-1 bg-[var(--bg-sidebar)] rounded-lg border border-[var(--border-color)]"><button onClick={() => setTempLanguage('ru')} className={`flex-1 py-2 rounded-md text-sm ${tempLanguage === 'ru' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>Русский</button><button onClick={() => setTempLanguage('en')} className={`flex-1 py-2 rounded-md text-sm ${tempLanguage === 'en' ? 'bg-[var(--bg-body)] shadow text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>English</button></div></div>
-                                        <div><label className="block text-sm mb-2 text-[var(--text-secondary)]">{t.apiKey}</label><input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} className="w-full p-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] font-mono text-sm" /></div>
-                                        
-                                        <button onClick={clearAllHistory} className="w-full p-3 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-sm border border-red-500/20">{t.clearHistory}</button>
+                                        <div className="h-px bg-[var(--border-color)] opacity-50"></div>
 
-                                        <div className="flex justify-end gap-2 mt-6"><button onClick={() => setIsSettingsOpen(false)} className="px-4 py-2 text-[var(--text-primary)] hover:bg-[var(--hover-bg)] rounded-full">{t.close}</button><button onClick={saveSettings} className="px-4 py-2 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium hover:opacity-90">{t.save}</button></div>
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsAppearance}</h3>
+                                            
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.theme}</label>
+                                                    <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
+                                                        <button onClick={() => setTempTheme('light')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempTheme === 'light' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>Light</button>
+                                                        <button onClick={() => setTempTheme('dark')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempTheme === 'dark' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>Dark</button>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.language}</label>
+                                                    <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
+                                                        <button onClick={() => setTempLanguage('ru')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempLanguage === 'ru' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>Русский</button>
+                                                        <button onClick={() => setTempLanguage('en')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempLanguage === 'en' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>English</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.tabTitleSetting}</label>
+                                                <input type="text" value={tempTabTitle} onChange={e => setTempTabTitle(e.target.value)} placeholder={t.tabTitlePlaceholder} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-sm transition-colors" />
+                                            </div>
+                                        </div>
+
+                                        <div className="h-px bg-[var(--border-color)] opacity-50"></div>
+
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsData}</h3>
+                                            
+                                            <div>
+                                                <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.yourName}</label>
+                                                <input type="text" value={tempNickname} onChange={e => setTempNickname(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-sm transition-colors" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.apiKey}</label>
+                                                <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] font-mono text-sm transition-colors" />
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    
+                                    <div className="p-6 border-t border-[var(--border-color)] flex justify-between items-center gap-4 bg-[var(--bg-surface)] rounded-b-2xl z-10">
+                                        <button onClick={clearAllHistory} className="px-5 py-2.5 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-full text-sm font-medium transition-colors">{t.clearHistory}</button>
+                                        <button onClick={saveSettings} className="px-8 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium hover:opacity-90 transition-opacity ml-auto">{t.save}</button>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* System Instructions / Memory Modal */}
                         {isMemoryModalOpen && (
-                            <div className="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center" onClick={() => setIsMemoryModalOpen(false)}>
+                            <div className="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-4" onClick={() => setIsMemoryModalOpen(false)}>
                                 <div className="bg-[var(--bg-surface)] p-0 rounded-2xl w-full max-w-2xl border border-[var(--border-color)] shadow-2xl flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
                                     <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
                                         <h2 className="text-xl font-bold">{t.systemInstructions}</h2>
-                                        <button onClick={() => setIsMemoryModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><Icon name="x" className="w-5 h-5" /></button>
+                                        <button onClick={() => setIsMemoryModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 rounded-full hover:bg-[var(--hover-bg)] transition-colors"><Icon name="x" className="w-5 h-5" /></button>
                                     </div>
                                     <div className="p-6 flex-1 overflow-y-auto">
                                         <textarea 
@@ -1025,22 +1443,22 @@
                                             {t.sysInstDescription}
                                         </p>
                                     </div>
-                                    <div className="p-6 border-t border-[var(--border-color)] flex justify-end gap-2">
-                                        <button onClick={() => setIsMemoryModalOpen(false)} className="px-5 py-2.5 text-[var(--text-primary)] hover:bg-[var(--hover-bg)] rounded-full transition-colors">{t.cancel}</button>
-                                        <button onClick={saveMemory} className="px-5 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium hover:opacity-90 transition-opacity">{t.save}</button>
+                                    <div className="p-6 border-t border-[var(--border-color)] flex justify-end gap-3">
+                                        <button onClick={() => setIsMemoryModalOpen(false)} className="px-6 py-2.5 text-[var(--text-primary)] hover:bg-[var(--hover-bg)] rounded-full transition-colors font-medium">{t.cancel}</button>
+                                        <button onClick={saveMemory} className="px-8 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium hover:opacity-90 transition-opacity">{t.save}</button>
                                     </div>
                                 </div>
                             </div>
                         )}
 
                         {isWelcomeModalOpen && (
-                            <div className="fixed inset-0 bg-black/90 z-[150] flex items-center justify-center">
-                                <div className="bg-[var(--bg-surface)] p-8 rounded-2xl w-full max-w-md border border-[var(--border-color)] shadow-2xl text-center">
-                                    <div className="mb-6"><GeminiIcon className="w-12 h-12 mx-auto animate-pulse" /></div>
+                            <div className="fixed inset-0 bg-black/90 z-[150] flex items-center justify-center p-4">
+                                <div className="bg-[var(--bg-surface)] p-8 rounded-3xl w-full max-w-md border border-[var(--border-color)] shadow-2xl text-center">
+                                    <div className="mb-6"><GeminiIcon className="w-14 h-14 mx-auto animate-pulse" active={true} /></div>
                                     <h2 className="text-2xl font-bold mb-2">{t.welcome}</h2>
-                                    <p className="text-[var(--text-secondary)] mb-6">{t.askName}</p>
-                                    <input type="text" value={nickname} onChange={e => setNickname(e.target.value)} placeholder={t.namePlaceholder} className="w-full p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-center text-lg mb-6" onKeyDown={e => e.key === 'Enter' && saveNickname(nickname)} />
-                                    <button onClick={() => saveNickname(nickname)} className="w-full py-3 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium hover:opacity-90 transition-opacity">{t.startChat}</button>
+                                    <p className="text-[var(--text-secondary)] mb-8">{t.askName}</p>
+                                    <input type="text" value={nickname} onChange={e => setNickname(e.target.value)} placeholder={t.namePlaceholder} className="w-full p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-center text-lg mb-6 transition-colors" onKeyDown={e => e.key === 'Enter' && saveNickname(nickname)} />
+                                    <button onClick={() => saveNickname(nickname)} className="w-full py-4 bg-[var(--accent-blue)] text-[#000] rounded-xl font-bold hover:opacity-90 transition-opacity">{t.startChat}</button>
                                 </div>
                             </div>
                         )}
