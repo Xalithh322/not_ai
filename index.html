@@ -1136,7 +1136,7 @@ try {
                                         <span>{t.balanceLabel}</span>
                                         <span>
                                             {balanceData 
-                                                ? `$${balanceData.usage.toFixed(3)} / $${balanceData.limit.toFixed(0)}` 
+                                                ? `${balancePercentage.toFixed(1)}%` 
                                                 : '...'}
                                         </span>
                                     </div>
