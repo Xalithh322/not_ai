@@ -775,7 +775,7 @@ try {
                     if (currentAttempt >= maxAttempts) return;
                     
                     try {
-                        const costRes = await fetch(`https://openrouter.ai/api/v1/generation?id=${genId}`, {
+                        const costRes = await fetch(`/api/v1/generation?id=${genId}`, {
                             headers: { 'Authorization': `Bearer ${apiKey}` }
                         });
                         const costData = await costRes.json();
