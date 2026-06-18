@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>noi ai</title>
+    <title>NOT ai</title>
     
     <!-- Используем надежные, зафиксированные по версиям CDN от jsDelivr -->
     <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
@@ -105,7 +105,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo, Component } = React;
 
-        const APP_VERSION = "v3.4.1";
+        const APP_VERSION = "v3.4.2";
 
         // --- Безопасная обертка для localStorage ---
         const safeStorage = {
@@ -133,7 +133,7 @@
             }
         };
 
-        // --- Safe Icon Component (FIXED) ---
+        // --- Safe Icon Component ---
         const Icon = ({ name, className }) => {
             const spanRef = useRef(null);
 
@@ -233,7 +233,7 @@
             return <GeminiIcon className={className} active={active} />;
         };
 
-        // --- Safe IndexedDB Wrapper ---
+        // --- Исходный, стабильный IndexedDB Wrapper ---
         const DB_NAME = 'GeminiChatDB';
         const STORE_NAME = 'chats';
         const DB_VERSION = 1;
@@ -241,66 +241,45 @@
         const db = {
             open: () => {
                 return new Promise((resolve, reject) => {
-                    if (!window.indexedDB) {
-                        reject(new Error("IndexedDB is not supported in this browser environment."));
-                        return;
-                    }
-                    try {
-                        const request = indexedDB.open(DB_NAME, DB_VERSION);
-                        request.onupgradeneeded = (e) => {
-                            const dbInstance = e.target.result;
-                            if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
-                                dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                            }
-                        };
-                        request.onsuccess = (e) => resolve(e.target.result);
-                        request.onerror = (e) => reject(e.target.error);
-                    } catch (err) {
-                        reject(err);
-                    }
+                    const request = indexedDB.open(DB_NAME, DB_VERSION);
+                    request.onupgradeneeded = (e) => {
+                        const dbInstance = e.target.result;
+                        if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
+                            dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                        }
+                    };
+                    request.onsuccess = (e) => resolve(e.target.result);
+                    request.onerror = (e) => reject(e.target.error);
                 });
             },
             saveChats: async (chats) => {
-                try {
-                    const database = await db.open();
-                    return new Promise((resolve, reject) => {
-                        const tx = database.transaction(STORE_NAME, 'readwrite');
-                        const store = tx.objectStore(STORE_NAME);
-                        store.put({ id: 'all_chats', data: chats }); 
-                        tx.oncomplete = () => resolve();
-                        tx.onerror = (e) => reject(e.target.error);
-                    });
-                } catch (e) {
-                    console.error("Failed to save chats to DB:", e);
-                }
+                const database = await db.open();
+                return new Promise((resolve, reject) => {
+                    const tx = database.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    store.put({ id: 'all_chats', data: chats }); 
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = (e) => reject(e.target.error);
+                });
             },
             getChats: async () => {
-                try {
-                    const database = await db.open();
-                    return new Promise((resolve, reject) => {
-                        const tx = database.transaction(STORE_NAME, 'readonly');
-                        const store = tx.objectStore(STORE_NAME);
-                        const request = store.get('all_chats');
-                        request.onsuccess = () => resolve(request.result ? request.result.data : []);
-                        request.onerror = (e) => reject(e.target.error);
-                    });
-                } catch (e) {
-                    console.error("Failed to read chats from DB:", e);
-                    return [];
-                }
+                const database = await db.open();
+                return new Promise((resolve, reject) => {
+                    const tx = database.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const request = store.get('all_chats');
+                    request.onsuccess = () => resolve(request.result ? request.result.data : []);
+                    request.onerror = (e) => reject(e.target.error);
+                });
             },
             clear: async () => {
-                try {
-                    const database = await db.open();
-                    return new Promise((resolve, reject) => {
-                        const tx = database.transaction(STORE_NAME, 'readwrite');
-                        tx.objectStore(STORE_NAME).clear();
-                        tx.oncomplete = () => resolve();
-                        tx.onerror = (e) => reject(e.target.error);
-                    });
-                } catch (e) {
-                    console.error("Failed to clear DB:", e);
-                }
+                const database = await db.open();
+                return new Promise((resolve, reject) => {
+                    const tx = database.transaction(STORE_NAME, 'readwrite');
+                    tx.objectStore(STORE_NAME).clear();
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = (e) => reject(e.target.error);
+                });
             }
         };
 
@@ -490,6 +469,7 @@
             
             const [chats, setChats] = useState([]);
             const [isChatsLoaded, setIsChatsLoaded] = useState(false); 
+            const [loadError, setLoadError] = useState(false); // Защита от перезаписи при ошибке загрузки
 
             const [activeChatId, setActiveChatId] = useState(null);
             const [input, setInput] = useState('');
@@ -519,7 +499,6 @@
             const isUserScrolledUp = useRef(false);
             const lastScrollTopRef = useRef(0);
             
-            // Безопасный выбор перевода (защита от краша при неопределенном языке)
             const activeLang = translations[language] ? language : 'ru';
             const t = translations[activeLang];
 
@@ -607,6 +586,7 @@
                         }
                     } catch (e) {
                         console.error("DB Load Error", e);
+                        setLoadError(true); // Защищаем данные от случайной перезаписи пустой сессией
                         createNewChat();
                     } finally {
                         setIsChatsLoaded(true);
@@ -616,13 +596,14 @@
             }, []);
 
             useEffect(() => {
-                if (isChatsLoaded) { 
+                // Сохраняем ТОЛЬКО если база данных загружена успешно и без критических сбоев
+                if (isChatsLoaded && !loadError) { 
                     const timer = setTimeout(() => {
                         db.saveChats(chats).catch(e => console.error("Save Error", e));
                     }, 500); 
                     return () => clearTimeout(timer);
                 }
-            }, [chats, isChatsLoaded]);
+            }, [chats, isChatsLoaded, loadError]);
 
             useEffect(() => {
                 if (!isUserScrolledUp.current && chatContainerRef.current) {
