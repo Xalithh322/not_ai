@@ -643,8 +643,8 @@
                 // ИСПРАВЛЕНО: проверка ключа перед запросом
                 if (!apiKeyRef.current) return;
                 try {
-                    const modelName = 'google/gemma-3-4b-it';
-                    const prompt = `Generate a very short, concise, and natural title (maximum 3-5 words) for a chat that starts with the message below. The title must be in the same language as the message. Do not use quotes. Message: "${userMessage.slice(0, 500)}"`;
+                    const modelName = 'google/gemini-3.1-flash-lite';
+                    const prompt = `Generate a very short, concise, and natural title (maximum 3-5 words) for a chat that starts with the message below. The title must be in the same language as the message. Do NOT use quotes! Message: "${userMessage.slice(0, 500)}"`;
                     const res = await fetch(`${API_BASE}/v1/chat/completions`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${apiKeyRef.current}`, 'Content-Type': 'application/json' },
