@@ -1118,13 +1118,6 @@
                                 )}
                             </div>
                             <div className="flex items-center gap-4">
-                                {/* ИСПРАВЛЕНО: переключатель веб-поиска */}
-                                {!safeMode && (
-                                    <button onClick={toggleWebSearch} className={`flex items-center gap-2 px-3 py-2 rounded-full border transition-colors text-sm font-medium ${webSearch ? 'bg-[var(--accent-blue)] text-black border-transparent' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border-[var(--border-color)] hover:bg-[var(--hover-bg)]'}`} title={t.webSearch}>
-                                        <Icon name="globe" className="w-4 h-4" />
-                                        <span>{t.webSearch}</span>
-                                    </button>
-                                )}
                                 {!safeMode && (
                                     <a href="https://openrouter.ai" target="_blank" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" title={t.officialSite}>
                                         <span className="text-sm font-medium">{t.officialSite}</span>
