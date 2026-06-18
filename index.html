@@ -360,7 +360,6 @@
             const [provider, setProvider] = useState(safeStorage.getItem('app_provider') || 'gemini');
             const [balanceData, setBalanceData] = useState(null);
             // ИСПРАВЛЕНО: веб-поиск теперь переключаемый, а не принудительный
-            const [webSearch, setWebSearch] = useState(safeStorage.getItem('app_web_search') === 'true');
 
             const [chats, setChats] = useState([]);
             const [isChatsLoaded, setIsChatsLoaded] = useState(false);
@@ -550,14 +549,6 @@
                 setSystemInstruction(tempSystemInstruction);
                 safeStorage.setItem('gemini_system_instruction', tempSystemInstruction);
                 setIsMemoryModalOpen(false);
-            };
-
-            const toggleWebSearch = () => {
-                setWebSearch(prev => {
-                    const next = !prev;
-                    safeStorage.setItem('app_web_search', String(next));
-                    return next;
-                });
             };
 
             const createNewChat = () => {
