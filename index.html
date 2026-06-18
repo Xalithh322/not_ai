@@ -4,16 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>not ai</title>
-    
-    <!-- Используем надежные, зафиксированные по версиям CDN от jsDelivr -->
+
     <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
     <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script> 
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.453.0/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.min.js"></script>
+    <!-- ИСПРАВЛЕНО: добавлен DOMPurify для защиты от XSS -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.11/dist/purify.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <!-- ИСПРАВЛЕНО: подключён auto-render KaTeX для рендера формул -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap');
@@ -69,7 +72,7 @@
             overflow: hidden;
             transition: background-color 0.3s;
         }
- 
+
         .markdown-body p { margin-bottom: 1rem; line-height: 1.6; color: var(--text-primary); }
         .markdown-body pre {
             background-color: var(--bg-sidebar);
@@ -86,16 +89,14 @@
             border-radius: 4px;
             font-size: 0.9em;
         }
-        
+        .markdown-body pre code { background: none; padding: 0; }
+
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
-        
-        /* Custom Scrollbar */
+
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: #444746; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #5e5e5e; }
-        
-        /* Slimmer scrollbar for modals */
         .scrollbar-slim::-webkit-scrollbar { width: 4px; }
     </style>
 </head>
@@ -105,84 +106,41 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo, Component } = React;
 
-        const APP_VERSION = "v3.5.1";
+        const APP_VERSION = "v3.5.2";
 
-        // --- Безопасная обертка для localStorage ---
+        // ИСПРАВЛЕНО: базовый URL API. Используем абсолютный адрес OpenRouter.
+        // Если у вас есть свой прокси, замените на "/api".
+        const API_BASE = "https://openrouter.ai/api";
+
         const safeStorage = {
-            getItem: (key) => {
-                try {
-                    return localStorage.getItem(key);
-                } catch (e) {
-                    console.warn("Storage is blocked or unavailable:", e);
-                    return null;
-                }
-            },
-            setItem: (key, value) => {
-                try {
-                    localStorage.setItem(key, value);
-                } catch (e) {
-                    console.warn("Storage is blocked or unavailable:", e);
-                }
-            },
-            removeItem: (key) => {
-                try {
-                    localStorage.removeItem(key);
-                } catch (e) {
-                    console.warn("Storage is blocked or unavailable:", e);
-                }
-            }
+            getItem: (key) => { try { return localStorage.getItem(key); } catch (e) { console.warn("Storage blocked:", e); return null; } },
+            setItem: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { console.warn("Storage blocked:", e); } },
+            removeItem: (key) => { try { localStorage.removeItem(key); } catch (e) { console.warn("Storage blocked:", e); } }
         };
 
-        // --- Safe Icon Component ---
         const Icon = ({ name, className }) => {
             const spanRef = useRef(null);
-
             useEffect(() => {
                 let active = true;
                 const tryInit = () => {
                     if (!active) return;
                     if (spanRef.current && window.lucide) {
                         spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className || ''}"></i>`;
-                        try {
-                            window.lucide.createIcons({ root: spanRef.current });
-                        } catch (e) {
-                            console.error("Lucide rendering error:", e);
-                        }
+                        try { window.lucide.createIcons({ root: spanRef.current }); } catch (e) { console.error("Lucide error:", e); }
                     }
                 };
-
                 tryInit();
-
                 const interval = setInterval(() => {
-                    if (window.lucide && spanRef.current && !spanRef.current.querySelector('svg')) {
-                        tryInit();
-                    } else if (window.lucide) {
-                        clearInterval(interval);
-                    }
+                    if (window.lucide && spanRef.current && !spanRef.current.querySelector('svg')) tryInit();
+                    else if (window.lucide) clearInterval(interval);
                 }, 100);
-
-                return () => {
-                    active = false;
-                    clearInterval(interval);
-                };
+                return () => { active = false; clearInterval(interval); };
             }, [name, className]);
-
-            return (
-                <span
-                    ref={spanRef}
-                    className="inline-flex items-center justify-center flex-shrink-0 leading-none"
-                />
-            );
+            return <span ref={spanRef} className="inline-flex items-center justify-center flex-shrink-0 leading-none" />;
         };
 
-        // --- Brand Icons ---
         const GeminiIcon = ({ className, active = true }) => (
-            <img 
-                src="https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg" 
-                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
-                alt="Gemini" 
-                draggable="false" 
-            />
+            <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="Gemini" draggable="false" />
         );
 
         const ChatGPTIcon = ({ className, active = true }) => (
@@ -192,48 +150,19 @@
         );
 
         const DeepSeekIcon = ({ className, active = true }) => (
-            <img 
-                src="https://i.ibb.co/vCC9PQ7S/image.png" 
-                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
-                alt="DeepSeek" 
-                draggable="false" 
-            />
+            <img src="https://i.ibb.co/vCC9PQ7S/image.png" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="DeepSeek" draggable="false" />
         );
-
         const FreeOptionIcon = ({ className, active = true }) => (
-            <img 
-                src="https://i.ibb.co/3Yv1xq1K/image.png" 
-                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
-                alt="Free" 
-                draggable="false" 
-            />
+            <img src="https://i.ibb.co/3Yv1xq1K/image.png" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="Free" draggable="false" />
         );
-
         const RouterIcon = ({ className, active = true, theme }) => (
-            <img 
-                src={theme === 'light' ? 'https://i.ibb.co/23g12YV6/image.png' : 'https://i.ibb.co/kssPJfdp/image.png'} 
-                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
-                alt="Router" 
-                draggable="false" 
-            />
+            <img src={theme === 'light' ? 'https://i.ibb.co/23g12YV6/image.png' : 'https://i.ibb.co/kssPJfdp/image.png'} className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="Router" draggable="false" />
         );
-
         const GemmaIcon = ({ className, active = true }) => (
-            <img 
-                src="https://i.ibb.co/G4Zdnf7Y/image.png" 
-                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
-                alt="Gemma" 
-                draggable="false" 
-            />
+            <img src="https://i.ibb.co/G4Zdnf7Y/image.png" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="Gemma" draggable="false" />
         );
-
         const MetaIcon = ({ className, active = true }) => (
-            <img 
-                src="https://i.ibb.co/Q7fB6grM/image.png" 
-                className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} 
-                alt="Meta" 
-                draggable="false" 
-            />
+            <img src="https://i.ibb.co/Q7fB6grM/image.png" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="Meta" draggable="false" />
         );
 
         const ProviderIcon = ({ provider, className, active = true, theme }) => {
@@ -246,31 +175,25 @@
             return <GeminiIcon className={className} active={active} />;
         };
 
-        // --- Исходный, стабильный IndexedDB Wrapper ---
         const DB_NAME = 'GeminiChatDB';
         const STORE_NAME = 'chats';
         const DB_VERSION = 1;
 
         const db = {
-            open: () => {
-                return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(DB_NAME, DB_VERSION);
-                    request.onupgradeneeded = (e) => {
-                        const dbInstance = e.target.result;
-                        if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
-                            dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                        }
-                    };
-                    request.onsuccess = (e) => resolve(e.target.result);
-                    request.onerror = (e) => reject(e.target.error);
-                });
-            },
+            open: () => new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const dbInstance = e.target.result;
+                    if (!dbInstance.objectStoreNames.contains(STORE_NAME)) dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e.target.error);
+            }),
             saveChats: async (chats) => {
                 const database = await db.open();
                 return new Promise((resolve, reject) => {
                     const tx = database.transaction(STORE_NAME, 'readwrite');
-                    const store = tx.objectStore(STORE_NAME);
-                    store.put({ id: 'all_chats', data: chats }); 
+                    tx.objectStore(STORE_NAME).put({ id: 'all_chats', data: chats });
                     tx.oncomplete = () => resolve();
                     tx.onerror = (e) => reject(e.target.error);
                 });
@@ -279,8 +202,7 @@
                 const database = await db.open();
                 return new Promise((resolve, reject) => {
                     const tx = database.transaction(STORE_NAME, 'readonly');
-                    const store = tx.objectStore(STORE_NAME);
-                    const request = store.get('all_chats');
+                    const request = tx.objectStore(STORE_NAME).get('all_chats');
                     request.onsuccess = () => resolve(request.result ? request.result.data : []);
                     request.onerror = (e) => reject(e.target.error);
                 });
@@ -296,12 +218,8 @@
             }
         };
 
-        // --- Error Boundary ---
         class ErrorBoundary extends Component {
-            constructor(props) {
-                super(props);
-                this.state = { hasError: false, error: null };
-            }
+            constructor(props) { super(props); this.state = { hasError: false, error: null }; }
             static getDerivedStateFromError(error) { return { hasError: true, error }; }
             componentDidCatch(error, errorInfo) { console.error("React Error:", error, errorInfo); }
             render() {
@@ -320,120 +238,62 @@
 
         const translations = {
             ru: {
-                newChat: 'Новый чат',
-                newChatSafe: 'Новая заметка',
-                recent: 'Недавние',
-                settings: 'Настройки',
-                officialSite: 'Официальный сайт OpenRouter',
-                greeting: 'Привет',
-                helpPrompt: 'Как я могу помочь тебе сегодня?',
-                guest: 'Гость',
-                thinking: 'Думаю...',
-                send: 'Отправить',
-                stop: 'Остановить генерацию', 
-                inputPlaceholder: 'Напиши свой запрос...',
-                yourName: 'Твое имя',
-                tabTitleSetting: 'Название вкладки',
-                tabTitlePlaceholder: 'not ai',
-                theme: 'Тема',
-                language: 'Язык',
-                apiKey: 'OpenRouter API Key',
-                close: 'Закрыть',
-                cancel: 'Отмена',
-                save: 'Сохранить',
-                welcome: 'Добро пожаловать!',
-                askName: 'Как мне к тебе обращаться?',
-                namePlaceholder: 'Введи свое имя',
-                startChat: 'Начать общение',
-                modelFlash: 'Быстрая модель нового поколения',
-                modelPro: 'Самая мощная модель для сложных задач',
+                newChat: 'Новый чат', newChatSafe: 'Новая заметка', recent: 'Недавние', settings: 'Настройки',
+                officialSite: 'Официальный сайт OpenRouter', greeting: 'Привет', helpPrompt: 'Как я могу помочь тебе сегодня?',
+                guest: 'Гость', thinking: 'Думаю...', send: 'Отправить', stop: 'Остановить генерацию',
+                inputPlaceholder: 'Напиши свой запрос...', yourName: 'Твое имя', tabTitleSetting: 'Название вкладки',
+                tabTitlePlaceholder: 'not ai', theme: 'Тема', language: 'Язык', apiKey: 'OpenRouter API Key',
+                close: 'Закрыть', cancel: 'Отмена', save: 'Сохранить', welcome: 'Добро пожаловать!',
+                askName: 'Как мне к тебе обращаться?', namePlaceholder: 'Введи свое имя', startChat: 'Начать общение',
+                modelFlash: 'Быстрая модель нового поколения', modelPro: 'Самая мощная модель для сложных задач',
                 chatgptFlash: 'Универсальная модель для повседневных дел',
                 chatgptPro: 'Логичный, для точных вычислений (Гораздо умнее 5.4 mini, но долго отвечает)',
-                deepseekChatDesc: 'Оптимальный баланс скорости и интеллекта',
-                deepseekR1Desc: 'Глубокое мышление для сложных задач',
-                freeModelsLabel: 'Дешевые модели',
-                freeAutoLabel: 'OpenRouter Auto',
+                deepseekChatDesc: 'Оптимальный баланс скорости и интеллекта', deepseekR1Desc: 'Глубокое мышление для сложных задач',
+                freeModelsLabel: 'Дешевые модели', freeAutoLabel: 'OpenRouter Auto',
                 freeAutoDesc: 'Автоматический поиск лучшей бесплатной нейросети',
                 freeGemmaDesc: 'Легкая и сообразительная модель от Google',
                 freeLlamaDesc: 'Надежная база для текстов любой сложности + Легкие задания по математике.',
-                connected: 'Сервер: Подключен',
-                emptyResponse: 'Пустой ответ от сервера',
-                requestError: 'Ошибка запроса',
-                errorPrefix: 'Ошибка: ',
-                systemInstructions: 'Системные инструкции',
+                connected: 'Сервер: Подключен', emptyResponse: 'Пустой ответ от сервера', requestError: 'Ошибка запроса',
+                errorPrefix: 'Ошибка: ', systemInstructions: 'Системные инструкции',
                 sysInstDescription: 'Укажи, как модель должна себя вести (например: "Ты опытный программист...").',
-                sysInstPlaceholder: 'Напиши инструкции здесь...',
-                balanceLabel: 'Баланс:',
-                clearHistory: 'Очистить историю',
-                provider: 'Провайдер ИИ',
-                reqStopped: '⚠️ Запрос был остановлен.',
-                costLabel: 'Стоимость:',
+                sysInstPlaceholder: 'Напиши инструкции здесь...', balanceLabel: 'Баланс:', clearHistory: 'Очистить историю',
+                provider: 'Провайдер ИИ', reqStopped: '⚠️ Запрос был остановлен.', costLabel: 'Стоимость:',
                 descGemini: 'Универсальные модели от Google. Быстрые, с большим контекстом.',
                 descChatGPT: 'Мощные модели OpenAI. Отлично справляются с логикой и кодом.',
                 descDeepSeek: 'Продвинутые модели. Включает R1 — модель с глубоким рассуждением.',
                 descFree: 'Доступ к бюджетным моделям с низким расходом баланса API ключа.',
-                settingsAI: 'ИИ и поведение',
-                settingsAppearance: 'Внешний вид',
-                settingsData: 'Данные аккаунта',
-                attachPhoto: 'Прикрепить фото'
+                settingsAI: 'ИИ и поведение', settingsAppearance: 'Внешний вид', settingsData: 'Данные аккаунта',
+                attachPhoto: 'Прикрепить фото', noApiKey: '⚠️ Не указан API ключ. Откройте настройки и введите ключ OpenRouter.',
+                webSearch: 'Веб-поиск'
             },
             da: {
-                newChat: 'Ny chat',
-                newChatSafe: 'Ny note',
-                recent: 'Seneste',
-                settings: 'Indstillinger',
-                officialSite: 'Officiel OpenRouter webside',
-                greeting: 'Hej',
-                helpPrompt: 'Hvordan kan jeg hjælpe dig i dag?',
-                guest: 'Gæst',
-                thinking: 'Tænker...',
-                send: 'Send',
-                stop: 'Stop generering',
-                inputPlaceholder: 'Indtast din besked...',
-                yourName: 'Dit navn',
-                tabTitleSetting: 'Fanebladstitel',
-                tabTitlePlaceholder: 'not ai',
-                theme: 'Tema',
-                language: 'Sprog',
-                apiKey: 'OpenRouter API Key',
-                close: 'Luk',
-                cancel: 'Annuller',
-                save: 'Gem',
-                welcome: 'Velkommen!',
-                askName: 'Hvad skal jeg kalde dig?',
-                namePlaceholder: 'Indtast dit navn',
-                startChat: 'Start chat',
-                modelFlash: 'Hurtig næste-generations model',
-                modelPro: 'Mest kraftfulde model til komplekse opgaver',
+                newChat: 'Ny chat', newChatSafe: 'Ny note', recent: 'Seneste', settings: 'Indstillinger',
+                officialSite: 'Officiel OpenRouter webside', greeting: 'Hej', helpPrompt: 'Hvordan kan jeg hjælpe dig i dag?',
+                guest: 'Gæst', thinking: 'Tænker...', send: 'Send', stop: 'Stop generering',
+                inputPlaceholder: 'Indtast din besked...', yourName: 'Dit navn', tabTitleSetting: 'Fanebladstitel',
+                tabTitlePlaceholder: 'not ai', theme: 'Tema', language: 'Sprog', apiKey: 'OpenRouter API Key',
+                close: 'Luk', cancel: 'Annuller', save: 'Gem', welcome: 'Velkommen!',
+                askName: 'Hvad skal jeg kalde dig?', namePlaceholder: 'Indtast dit navn', startChat: 'Start chat',
+                modelFlash: 'Hurtig næste-generations model', modelPro: 'Mest kraftfulde model til komplekse opgaver',
                 chatgptFlash: 'Alsidig model til hverdagsopgaver',
                 chatgptPro: 'Logisk, til præcise beregninger (Meget klogere end 5.4 mini, men langsommere)',
-                deepseekChatDesc: 'Optimal balance mellem hastighed og intelligens',
-                deepseekR1Desc: 'Dyb tænkning til komplekse opgaver',
-                freeModelsLabel: 'Billige modeller',
-                freeAutoLabel: 'OpenRouter Auto',
+                deepseekChatDesc: 'Optimal balance mellem hastighed og intelligens', deepseekR1Desc: 'Dyb tænkning til komplekse opgaver',
+                freeModelsLabel: 'Billige modeller', freeAutoLabel: 'OpenRouter Auto',
                 freeAutoDesc: 'Automatisk søgning efter den bedste gratis model',
                 freeGemmaDesc: 'Let og kvik model fra Google',
                 freeLlamaDesc: 'Pålidelig base for tekster af enhver sværhedsgrad + nem matematik.',
-                connected: 'Server: Forbundet',
-                emptyResponse: 'Tomt svar fra serveren',
-                requestError: 'Anmodningsfejl',
-                errorPrefix: 'Fejl: ',
-                systemInstructions: 'Systeminstruktioner',
+                connected: 'Server: Forbundet', emptyResponse: 'Tomt svar fra serveren', requestError: 'Anmodningsfejl',
+                errorPrefix: 'Fejl: ', systemInstructions: 'Systeminstruktioner',
                 sysInstDescription: 'Angiv, hvordan modellen skal opføre sig (f.eks.: "Du er en erfaren programmør...").',
-                sysInstPlaceholder: 'Skriv instruktioner her...',
-                balanceLabel: 'Saldo:',
-                clearHistory: 'Ryd historik',
-                provider: 'AI Udbyder',
-                reqStopped: '⚠️ Anmodningen blev stoppet.',
-                costLabel: 'Pris:',
+                sysInstPlaceholder: 'Skriv instruktioner her...', balanceLabel: 'Saldo:', clearHistory: 'Ryd historik',
+                provider: 'AI Udbyder', reqStopped: '⚠️ Anmodningen blev stoppet.', costLabel: 'Pris:',
                 descGemini: 'Alsidige modeller fra Google. Hurtige med stort kontekstvindue.',
                 descChatGPT: 'Kraftfulde OpenAI modeller. Fremragende til logik og kode.',
                 descDeepSeek: 'Avancerede modeller. Inkluderer R1 – en model med dyb tænkning.',
                 descFree: 'Adgang til budgetvenlige modeller med lavt API-forbrug.',
-                settingsAI: 'AI & Adfærd',
-                settingsAppearance: 'Udseende',
-                settingsData: 'Kontodata',
-                attachPhoto: 'Vedhæft billede'
+                settingsAI: 'AI & Adfærd', settingsAppearance: 'Udseende', settingsData: 'Kontodata',
+                attachPhoto: 'Vedhæft billede', noApiKey: '⚠️ Ingen API-nøgle. Åbn indstillinger og indtast din OpenRouter-nøgle.',
+                webSearch: 'Websøgning'
             }
         };
 
@@ -441,17 +301,33 @@
             const containerRef = useRef(null);
             useEffect(() => {
                 if (!containerRef.current) return;
-                if (!content) {
-                    containerRef.current.innerHTML = '';
-                    return;
-                }
+                if (!content) { containerRef.current.innerHTML = ''; return; }
                 try {
                     const safeContent = String(content);
                     let html = marked.parse(safeContent);
-                    if (html instanceof Promise) html.then(res => containerRef.current.innerHTML = res);
-                    else containerRef.current.innerHTML = html;
-                } catch { 
-                    containerRef.current.innerText = String(content); 
+                    const apply = (rawHtml) => {
+                        // ИСПРАВЛЕНО: санитизация через DOMPurify (защита от XSS)
+                        const clean = window.DOMPurify ? window.DOMPurify.sanitize(rawHtml) : rawHtml;
+                        containerRef.current.innerHTML = clean;
+                        // ИСПРАВЛЕНО: рендер LaTeX-формул через KaTeX
+                        if (window.renderMathInElement) {
+                            try {
+                                window.renderMathInElement(containerRef.current, {
+                                    delimiters: [
+                                        { left: '$$', right: '$$', display: true },
+                                        { left: '$', right: '$', display: false },
+                                        { left: '\\(', right: '\\)', display: false },
+                                        { left: '\\[', right: '\\]', display: true }
+                                    ],
+                                    throwOnError: false
+                                });
+                            } catch (e) { /* ignore katex errors */ }
+                        }
+                    };
+                    if (html instanceof Promise) html.then(apply);
+                    else apply(html);
+                } catch {
+                    containerRef.current.innerText = String(content);
                 }
             }, [content]);
             return <div ref={containerRef} className="markdown-body text-[15px] border-none leading-7" />;
@@ -467,34 +343,40 @@
             </svg>
         );
 
+        // ИСПРАВЛЕНО: вынесен генератор уникальных ID для сообщений
+        let msgCounter = 0;
+        const genMsgId = () => `${Date.now()}_${msgCounter++}`;
+
         const App = () => {
             const DEFAULT_KEY = "";
-            
+
             const [apiKey, setApiKey] = useState(safeStorage.getItem('gemini_user_api_key') || DEFAULT_KEY);
             const [theme, setTheme] = useState(safeStorage.getItem('gemini_theme') || 'dark');
             const [language, setLanguage] = useState(safeStorage.getItem('gemini_language') || 'ru');
             const [nickname, setNickname] = useState(safeStorage.getItem('gemini_nickname') || '');
             const [tabTitle, setTabTitle] = useState(safeStorage.getItem('gemini_tab_title') || 'not ai');
             const [systemInstruction, setSystemInstruction] = useState(safeStorage.getItem('gemini_system_instruction') || '');
-            const [safeMode, setSafeMode] = useState(false); 
+            const [safeMode, setSafeMode] = useState(false);
             const [provider, setProvider] = useState(safeStorage.getItem('app_provider') || 'gemini');
             const [balanceData, setBalanceData] = useState(null);
-            
+            // ИСПРАВЛЕНО: веб-поиск теперь переключаемый, а не принудительный
+            const [webSearch, setWebSearch] = useState(safeStorage.getItem('app_web_search') === 'true');
+
             const [chats, setChats] = useState([]);
-            const [isChatsLoaded, setIsChatsLoaded] = useState(false); 
-            const [loadError, setLoadError] = useState(false); 
+            const [isChatsLoaded, setIsChatsLoaded] = useState(false);
+            const [loadError, setLoadError] = useState(false);
 
             const [activeChatId, setActiveChatId] = useState(null);
             const [input, setInput] = useState('');
             const [attachments, setAttachments] = useState([]);
-            const [isLoading, setIsLoading] = useState(false); 
-            const [isGenerating, setIsGenerating] = useState(false); 
-            const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
-            const [isSidebarHovered, setIsSidebarHovered] = useState(false); 
+            const [isLoading, setIsLoading] = useState(false);
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            const [isSidebarHovered, setIsSidebarHovered] = useState(false);
             const [isSettingsOpen, setIsSettingsOpen] = useState(false);
             const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
             const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
-            
+
             const [modelType, setModelType] = useState('flash');
             const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
 
@@ -511,7 +393,10 @@
             const chatContainerRef = useRef(null);
             const isUserScrolledUp = useRef(false);
             const lastScrollTopRef = useRef(0);
-            
+            // ИСПРАВЛЕНО: ref для актуального apiKey внутри асинхронных колбэков
+            const apiKeyRef = useRef(apiKey);
+            useEffect(() => { apiKeyRef.current = apiKey; }, [apiKey]);
+
             const activeLang = translations[language] ? language : 'ru';
             const t = translations[activeLang];
 
@@ -519,7 +404,7 @@
                 document.documentElement.setAttribute('data-theme', theme);
                 safeStorage.setItem('gemini_theme', theme);
             }, [theme]);
-            
+
             useEffect(() => {
                 safeStorage.setItem('gemini_language', language);
                 document.documentElement.lang = language;
@@ -538,28 +423,20 @@
 
             useEffect(() => {
                 if (isSettingsOpen || isMemoryModalOpen) {
-                    const timer = setTimeout(() => {
-                        if (window.lucide) {
-                            window.lucide.createIcons();
-                        }
-                    }, 50);
+                    const timer = setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
                     return () => clearTimeout(timer);
                 }
             }, [isSettingsOpen, isMemoryModalOpen]);
 
             const fetchBalance = async () => {
-                if (!apiKey) {
-                    setBalanceData(null);
-                    return;
-                }
+                const key = apiKeyRef.current;
+                if (!key) { setBalanceData(null); return; }
                 try {
-                    const res = await fetch("/api/v1/auth/key", {
+                    const res = await fetch(`${API_BASE}/v1/auth/key`, {
                         method: 'GET',
-                        headers: { 
-                            'Authorization': `Bearer ${apiKey}`,
-                            'Content-Type': 'application/json' 
-                        }
+                        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }
                     });
+                    if (!res.ok) { setBalanceData(null); return; }
                     const data = await res.json();
                     if (data && data.data) {
                         const { limit, usage } = data.data;
@@ -568,15 +445,10 @@
                             usage: usage !== null ? Number(usage) : 0
                         });
                     }
-                } catch (e) {
-                    console.error("Balance fetch error:", e);
-                    setBalanceData(null);
-                }
+                } catch (e) { console.error("Balance fetch error:", e); setBalanceData(null); }
             };
 
-            useEffect(() => {
-                fetchBalance();
-            }, [apiKey]);
+            useEffect(() => { fetchBalance(); }, [apiKey]);
 
             useEffect(() => {
                 const loadChats = async () => {
@@ -589,9 +461,7 @@
                                 setChats(parsedLegacy);
                                 if (parsedLegacy.length) setActiveChatId(parsedLegacy[0].id);
                                 else createNewChat();
-                            } else {
-                                createNewChat();
-                            }
+                            } else { createNewChat(); }
                         } else {
                             setChats(savedChats);
                             if (savedChats.length) setActiveChatId(savedChats[0].id);
@@ -599,20 +469,16 @@
                         }
                     } catch (e) {
                         console.error("DB Load Error", e);
-                        setLoadError(true); 
+                        setLoadError(true);
                         createNewChat();
-                    } finally {
-                        setIsChatsLoaded(true);
-                    }
+                    } finally { setIsChatsLoaded(true); }
                 };
                 loadChats();
             }, []);
 
             useEffect(() => {
-                if (isChatsLoaded && !loadError) { 
-                    const timer = setTimeout(() => {
-                        db.saveChats(chats).catch(e => console.error("Save Error", e));
-                    }, 500); 
+                if (isChatsLoaded && !loadError) {
+                    const timer = setTimeout(() => { db.saveChats(chats).catch(e => console.error("Save Error", e)); }, 500);
                     return () => clearTimeout(timer);
                 }
             }, [chats, isChatsLoaded, loadError]);
@@ -627,7 +493,7 @@
                 if (textareaRef.current) {
                     textareaRef.current.style.height = 'auto';
                     textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
-                    if (!input) textareaRef.current.style.height = 'auto'; 
+                    if (!input) textareaRef.current.style.height = 'auto';
                 }
             }, [input]);
 
@@ -641,39 +507,33 @@
             };
 
             const openSettings = () => {
-                setTempTheme(theme);
-                setTempLanguage(language);
-                setTempNickname(nickname);
-                setTempTabTitle(tabTitle);
-                setTempApiKey(apiKey);
-                setTempProvider(provider);
+                setTempTheme(theme); setTempLanguage(language); setTempNickname(nickname);
+                setTempTabTitle(tabTitle); setTempApiKey(apiKey); setTempProvider(provider);
                 setIsSettingsOpen(true);
             };
 
             const saveSettings = () => {
                 const finalName = tempNickname.trim() || t.guest;
                 const finalTab = tempTabTitle.trim() || t.tabTitlePlaceholder;
-                setTheme(tempTheme);
-                setLanguage(tempLanguage);
-                setNickname(finalName);
-                setTabTitle(finalTab);
-                setApiKey(tempApiKey);
-                setProvider(tempProvider);
+                setTheme(tempTheme); setLanguage(tempLanguage); setNickname(finalName);
+                setTabTitle(finalTab); setApiKey(tempApiKey); setProvider(tempProvider);
                 safeStorage.setItem('gemini_nickname', finalName);
                 safeStorage.setItem('gemini_tab_title', finalTab);
                 safeStorage.setItem('gemini_user_api_key', tempApiKey);
                 safeStorage.setItem('app_provider', tempProvider);
                 setIsSettingsOpen(false);
-                fetchBalance(); 
+                // ИСПРАВЛЕНО: используем актуальный ключ для запроса баланса
+                apiKeyRef.current = tempApiKey;
+                fetchBalance();
             };
 
             const clearAllHistory = async () => {
-                const confirmMsg = language === 'ru' 
-                    ? "Удалить ВСЮ историю из базы данных? Это нельзя отменить." 
+                const confirmMsg = language === 'ru'
+                    ? "Удалить ВСЮ историю из базы данных? Это нельзя отменить."
                     : "Slet hele din historik? Dette kan ikke fortrydes.";
-                if(confirm(confirmMsg)) {
+                if (confirm(confirmMsg)) {
                     await db.clear();
-                    safeStorage.removeItem('gemini_chats_v4'); 
+                    safeStorage.removeItem('gemini_chats_v4');
                     setChats([]);
                     createNewChat();
                     setIsSettingsOpen(false);
@@ -692,12 +552,18 @@
                 setIsMemoryModalOpen(false);
             };
 
+            const toggleWebSearch = () => {
+                setWebSearch(prev => {
+                    const next = !prev;
+                    safeStorage.setItem('app_web_search', String(next));
+                    return next;
+                });
+            };
+
             const createNewChat = () => {
                 const currentChat = chats.find(c => c.id === activeChatId);
                 if (currentChat && currentChat.messages.length === 0) {
-                    setIsSidebarOpen(false);
-                    setInput('');
-                    return; 
+                    setIsSidebarOpen(false); setInput(''); return;
                 }
                 const newChat = { id: Date.now().toString(), title: t.newChat, messages: [], timestamp: Date.now() };
                 setChats(prev => [newChat, ...prev]);
@@ -706,7 +572,7 @@
             };
 
             const handleSwitchChat = (targetId) => {
-                if (activeChatId === targetId) return; 
+                if (activeChatId === targetId) return;
                 const currentChat = chats.find(c => c.id === activeChatId);
                 if (currentChat && currentChat.messages.length === 0) {
                     setChats(prev => prev.filter(c => c.id !== activeChatId));
@@ -725,17 +591,20 @@
                 }
             };
 
+            // ИСПРАВЛЕНО: останавливаем генерацию в правильном чате (по сохранённому ID контроллера)
             const handleStopGeneration = () => {
                 if (abortControllerRef.current) {
+                    const targetChatId = abortControllerRef.current.chatId;
                     abortControllerRef.current.abort();
                     abortControllerRef.current = null;
                     setIsLoading(false);
                     setIsGenerating(false);
                     setChats(prev => prev.map(c => {
-                        if (c.id === activeChatId) {
+                        if (c.id === targetChatId) {
                             const newMsgs = [...c.messages];
-                            if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].isThinking) {
-                                newMsgs[newMsgs.length - 1].isThinking = false;
+                            const last = newMsgs[newMsgs.length - 1];
+                            if (last && last.isThinking) {
+                                newMsgs[newMsgs.length - 1] = { ...last, isThinking: false, text: t.reqStopped, isError: true };
                             }
                             return { ...c, messages: newMsgs };
                         }
@@ -750,12 +619,8 @@
                 const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
                 const isScrollingUp = scrollTop < lastScrollTopRef.current;
                 lastScrollTopRef.current = scrollTop;
-
-                if (isScrollingUp && distanceFromBottom > 80) {
-                    isUserScrolledUp.current = true;
-                } else if (distanceFromBottom < 40) {
-                    isUserScrolledUp.current = false;
-                }
+                if (isScrollingUp && distanceFromBottom > 80) isUserScrolledUp.current = true;
+                else if (distanceFromBottom < 40) isUserScrolledUp.current = false;
             };
 
             const handlePaste = (e) => {
@@ -766,9 +631,7 @@
                         const file = items[i].getAsFile();
                         if (file) {
                             const reader = new FileReader();
-                            reader.onload = (event) => {
-                                setAttachments(prev => [...prev, { base64: event.target.result, name: file.name || 'image.png' }]);
-                            };
+                            reader.onload = (event) => setAttachments(prev => [...prev, { base64: event.target.result, name: file.name || 'image.png' }]);
                             reader.readAsDataURL(file);
                         }
                     }
@@ -779,110 +642,97 @@
                 const files = Array.from(e.target.files);
                 files.forEach(file => {
                     const reader = new FileReader();
-                    reader.onload = (event) => {
-                        setAttachments(prev => [...prev, { base64: event.target.result, name: file.name }]);
-                    };
+                    reader.onload = (event) => setAttachments(prev => [...prev, { base64: event.target.result, name: file.name }]);
                     reader.readAsDataURL(file);
                 });
                 e.target.value = null;
             };
 
             const generateChatTitle = async (chatId, userMessage) => {
+                // ИСПРАВЛЕНО: проверка ключа перед запросом
+                if (!apiKeyRef.current) return;
                 try {
-                    const modelName = 'google/gemma-3-4b-it'; 
+                    const modelName = 'google/gemma-3-4b-it';
                     const prompt = `Generate a very short, concise, and natural title (maximum 3-5 words) for a chat that starts with the message below. The title must be in the same language as the message. Do not use quotes. Message: "${userMessage.slice(0, 500)}"`;
-                                        
-                    const res = await fetch("/api/v1/chat/completions", {
+                    const res = await fetch(`${API_BASE}/v1/chat/completions`, {
                         method: 'POST',
-                        headers: { 
-                            'Authorization': `Bearer ${apiKey}`,
-                            'Content-Type': 'application/json' 
-                        },
-                        body: JSON.stringify({ 
-                            model: modelName,
-                            messages: [{ role: 'user', content: prompt }]
-                        })
+                        headers: { 'Authorization': `Bearer ${apiKeyRef.current}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model: modelName, messages: [{ role: 'user', content: prompt }] })
                     });
+                    if (!res.ok) return;
                     const data = await res.json();
                     const newTitle = data.choices?.[0]?.message?.content?.trim()?.replace(/^["']|["']$/g, '');
                     if (newTitle) setChats(prev => prev.map(c => c.id === chatId ? { ...c, title: newTitle } : c));
                 } catch (e) { console.error("Title Gen Error:", e); }
             };
 
-            const pollCost = async (genId, chatId, messageIdx) => {
+            // ИСПРАВЛЕНО: pollCost находит сообщение по его уникальному id, а не по индексу
+            const pollCost = async (genId, chatId, messageId) => {
                 const maxAttempts = 50;
                 let currentAttempt = 0;
-
                 const check = async () => {
                     if (currentAttempt >= maxAttempts) return;
-                    
                     try {
-                        const costRes = await fetch(`/api/v1/generation?id=${genId}`, {
-                            headers: { 'Authorization': `Bearer ${apiKey}` }
+                        const costRes = await fetch(`${API_BASE}/v1/generation?id=${genId}`, {
+                            headers: { 'Authorization': `Bearer ${apiKeyRef.current}` }
                         });
-                        const costData = await costRes.json();
-                        const cost = costData.data?.total_cost;
-                        
-                        if (cost !== undefined && cost !== null && cost > 0) {
-                            setChats(prev => prev.map(c => {
-                                if (c.id === chatId) {
-                                    const newMessages = [...c.messages];
-                                    if (newMessages[messageIdx]) {
-                                        newMessages[messageIdx] = { ...newMessages[messageIdx], cost: cost };
+                        if (costRes.ok) {
+                            const costData = await costRes.json();
+                            const cost = costData.data?.total_cost;
+                            if (cost !== undefined && cost !== null && cost > 0) {
+                                setChats(prev => prev.map(c => {
+                                    if (c.id === chatId) {
+                                        return { ...c, messages: c.messages.map(m => m.id === messageId ? { ...m, cost } : m) };
                                     }
-                                    return { ...c, messages: newMessages };
-                                }
-                                return c;
-                            }));
-                            return; 
+                                    return c;
+                                }));
+                                return;
+                            }
                         }
-                    } catch (err) {
-                        console.error("Cost polling error:", err);
-                    }
-
+                    } catch (err) { console.error("Cost polling error:", err); }
                     currentAttempt++;
-                    setTimeout(check, 1000); 
+                    setTimeout(check, 1000);
                 };
-
                 check();
             };
 
             const sendMessage = async () => {
-                if ((!input.trim() && attachments.length === 0) || !apiKey) return;
-                
+                if ((!input.trim() && attachments.length === 0)) return;
+                // ИСПРАВЛЕНО: понятное сообщение, если нет ключа
+                if (!apiKey) {
+                    setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { id: genMsgId(), role: 'model', text: t.noApiKey, isError: true, isThinking: false }] } : c));
+                    return;
+                }
+
                 isUserScrolledUp.current = false;
                 lastScrollTopRef.current = 0;
-                if (chatContainerRef.current) {
-                    chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-                }
-                
+                if (chatContainerRef.current) chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+
                 const userText = input;
                 const activeAttachments = [...attachments];
                 const isFirstMessage = activeChat?.messages.length === 0;
                 const currentChatId = activeChatId;
                 const currentProvider = provider;
+                const currentModelType = modelType;
 
-                setInput(''); 
+                setInput('');
                 setAttachments([]);
 
-                if (activeAttachments.length > 0 && (currentProvider === 'deepseek' || (currentProvider === 'free' && modelType === 'flash'))) {
+                // Проверка поддержки изображений
+                if (activeAttachments.length > 0 && (currentProvider === 'deepseek' || (currentProvider === 'free' && currentModelType === 'flash'))) {
                     setChats(prev => prev.map(chat => {
                         if (chat.id === currentChatId) {
                             const title = chat.messages.length === 0 ? "Изображение" : chat.title;
                             return {
-                                ...chat,
-                                title,
+                                ...chat, title,
                                 messages: [
                                     ...chat.messages,
-                                    { role: 'user', text: userText, attachments: activeAttachments },
-                                    { 
-                                        role: 'model', 
-                                        text: language === 'ru' 
-                                            ? `⚠️ **Ошибка:** Выбранная нейросеть не поддерживает работу с фотографиями. Пожалуйста, отправляйте только текст или выберите другую модель (например, Gemini, ChatGPT, Llama 3.3 или Gemma 4).` 
+                                    { id: genMsgId(), role: 'user', text: userText, attachments: activeAttachments },
+                                    { id: genMsgId(), role: 'model',
+                                        text: language === 'ru'
+                                            ? `⚠️ **Ошибка:** Выбранная нейросеть не поддерживает работу с фотографиями. Пожалуйста, отправляйте только текст или выберите другую модель (например, Gemini, ChatGPT, Llama 3.3 или Gemma 4).`
                                             : `⚠️ **Fejl:** Den valgte model understøtter ikke billeder. Send venligst kun tekst eller vælg en anden model (f.eks. Gemini, ChatGPT, Llama 3.3 eller Gemma 4).`,
-                                        isError: true, 
-                                        provider: currentProvider 
-                                    }
+                                        isError: true, provider: currentProvider }
                                 ]
                             };
                         }
@@ -891,19 +741,20 @@
                     return;
                 }
 
-                setIsLoading(true); 
-                setIsGenerating(true); 
+                setIsLoading(true);
+                setIsGenerating(true);
 
+                // ИСПРАВЛЕНО: у сообщения модели есть уникальный id
+                const modelMsgId = genMsgId();
                 setChats(prev => prev.map(chat => {
                     if (chat.id === currentChatId) {
                         const title = chat.messages.length === 0 ? (userText.slice(0, 30) || "Image upload") : chat.title;
                         return {
-                            ...chat, 
-                            title, 
+                            ...chat, title,
                             messages: [
-                                ...chat.messages, 
-                                { role: 'user', text: userText, attachments: activeAttachments },
-                                { role: 'model', text: '', isThinking: true, provider: currentProvider, modelType: modelType, actualModel: "", cost: 0 }
+                                ...chat.messages,
+                                { id: genMsgId(), role: 'user', text: userText, attachments: activeAttachments },
+                                { id: modelMsgId, role: 'model', text: '', isThinking: true, provider: currentProvider, modelType: currentModelType, actualModel: "", cost: 0 }
                             ]
                         };
                     }
@@ -913,30 +764,34 @@
                 if (isFirstMessage && userText) generateChatTitle(currentChatId, userText);
 
                 const controller = new AbortController();
+                controller.chatId = currentChatId; // запоминаем чат
                 abortControllerRef.current = controller;
+
+                // ИСПРАВЛЕНО: переменные состояния потока объявлены ВНЕ try, доступны в catch/finally
+                let isStreamFinished = false;
 
                 try {
                     let modelName = "";
-                    if (provider === 'gemini') {
-                        if (modelType === 'pro') modelName = 'google/gemini-3.1-pro-preview';
-                        else if (modelType === 'flash3.5') modelName = 'google/gemini-3.5-flash';
+                    if (currentProvider === 'gemini') {
+                        if (currentModelType === 'pro') modelName = 'google/gemini-3.1-pro-preview';
+                        else if (currentModelType === 'flash3.5') modelName = 'google/gemini-3.5-flash';
                         else modelName = 'google/gemini-3-flash-preview';
-                    } else if (provider === 'chatgpt') {
-                        modelName = modelType === 'pro' ? 'openai/o4-mini' : 'openai/gpt-5.4-mini';
-                    } else if (provider === 'deepseek') {
-                        modelName = modelType === 'pro' ? 'deepseek/deepseek-r1' : 'deepseek/deepseek-chat-v3.1';
-                    } else if (provider === 'free') {
-                        if (modelType === 'pro') modelName = 'meta-llama/llama-3.3-70b-instruct';
-                        else if (modelType === 'gemma') modelName = 'google/gemma-4-31b-it';
+                    } else if (currentProvider === 'chatgpt') {
+                        modelName = currentModelType === 'pro' ? 'openai/o4-mini' : 'openai/gpt-5.4-mini';
+                    } else if (currentProvider === 'deepseek') {
+                        modelName = currentModelType === 'pro' ? 'deepseek/deepseek-r1' : 'deepseek/deepseek-chat-v3.1';
+                    } else if (currentProvider === 'free') {
+                        if (currentModelType === 'pro') modelName = 'meta-llama/llama-3.3-70b-instruct';
+                        else if (currentModelType === 'gemma') modelName = 'google/gemma-4-31b-it';
                         else modelName = 'openrouter/free';
                     }
 
-                    const maxTokensLimit = provider === 'gemini' ? 5000 : 4000;
+                    // ИСПРАВЛЕНО: больше токенов, особенно для reasoning-моделей
+                    const isReasoning = currentModelType === 'pro' && (currentProvider === 'deepseek' || currentProvider === 'chatgpt');
+                    const maxTokensLimit = isReasoning ? 32000 : (currentProvider === 'gemini' ? 8192 : 8000);
 
                     let openRouterMessages = [];
-                    if (systemInstruction.trim()) {
-                        openRouterMessages.push({ role: 'system', content: systemInstruction });
-                    }
+                    if (systemInstruction.trim()) openRouterMessages.push({ role: 'system', content: systemInstruction });
 
                     const history = activeChat?.messages.slice(-10) || [];
                     for (const msg of history) {
@@ -945,14 +800,10 @@
                             if (msg.attachments && msg.attachments.length > 0) {
                                 histContent = [];
                                 if (msg.text) histContent.push({ type: 'text', text: msg.text });
-                                msg.attachments.forEach(att => {
-                                    histContent.push({ type: 'image_url', image_url: { url: att.base64 } });
-                                });
-                            } else {
-                                histContent = msg.text || " ";
-                            }
+                                msg.attachments.forEach(att => histContent.push({ type: 'image_url', image_url: { url: att.base64 } }));
+                            } else { histContent = msg.text || " "; }
                             openRouterMessages.push({ role: 'user', content: histContent });
-                        } else if (msg.role === 'model') {
+                        } else if (msg.role === 'model' && !msg.isError) {
                             openRouterMessages.push({ role: 'assistant', content: msg.text || " " });
                         }
                     }
@@ -961,78 +812,67 @@
                     if (activeAttachments.length > 0) {
                         currentContent = [];
                         if (userText) currentContent.push({ type: 'text', text: userText });
-                        activeAttachments.forEach(att => {
-                            currentContent.push({ type: 'image_url', image_url: { url: att.base64 } });
-                        });
-                    } else {
-                        currentContent = userText;
-                    }
+                        activeAttachments.forEach(att => currentContent.push({ type: 'image_url', image_url: { url: att.base64 } }));
+                    } else { currentContent = userText; }
                     openRouterMessages.push({ role: 'user', content: currentContent });
 
-                    const res = await fetch("/api/v1/chat/completions", { 
-                        method: 'POST', 
-                        headers: { 
+                    const bodyPayload = {
+                        model: modelName,
+                        messages: openRouterMessages,
+                        max_tokens: maxTokensLimit,
+                        stream: true
+                    };
+                    // ИСПРАВЛЕНО: веб-поиск включается только если пользователь его выбрал
+                    if (webSearch) bodyPayload.plugins = [{ id: "web" }];
+
+                    const res = await fetch(`${API_BASE}/v1/chat/completions`, {
+                        method: 'POST',
+                        headers: {
                             'Authorization': `Bearer ${apiKey}`,
                             'HTTP-Referer': window.location.href,
                             'X-Title': 'not ai',
-                            'Content-Type': 'application/json' 
-                        }, 
-                        body: JSON.stringify({
-                            model: modelName,
-                            messages: openRouterMessages,
-                            max_tokens: maxTokensLimit,
-                            stream: true,
-                            // Жестко включаем веб-поиск для каждого запроса (официальный параметр OpenRouter)
-                            plugins: [{ id: "web" }]
-                        }),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(bodyPayload),
                         signal: controller.signal
                     });
-                    
+
                     if (!res.ok) {
-                        const errorData = await res.json();
-                        throw new Error(errorData.error?.message || t.requestError);
+                        let errMsg = t.requestError;
+                        try { const errorData = await res.json(); errMsg = errorData.error?.message || errMsg; } catch {}
+                        throw new Error(errMsg);
                     }
 
                     let fullResponseText = "";
                     let displayedText = "";
-                    let isStreamFinished = false;
                     let genId = null;
 
                     const updateUI = () => {
+                        // ИСПРАВЛЕНО: цикл прекращается, если контроллер сменился (новый запрос/стоп)
+                        if (abortControllerRef.current !== controller && isStreamFinished) return;
+
                         if (displayedText.length < fullResponseText.length) {
                             const diff = fullResponseText.length - displayedText.length;
-                            const charsToReveal = Math.max(1, Math.floor(diff / 3)); 
+                            const charsToReveal = Math.max(1, Math.floor(diff / 3));
                             displayedText = fullResponseText.slice(0, displayedText.length + charsToReveal);
-                            
                             setChats(prev => prev.map(c => {
                                 if (c.id === currentChatId) {
-                                    const newMsgs = [...c.messages];
-                                    newMsgs[newMsgs.length - 1] = { ...newMsgs[newMsgs.length - 1], text: displayedText, isThinking: false };
-                                    return { ...c, messages: newMsgs };
+                                    return { ...c, messages: c.messages.map(m => m.id === modelMsgId ? { ...m, text: displayedText, isThinking: false } : m) };
                                 }
                                 return c;
                             }));
                         }
-                        
+
                         if (!isStreamFinished || displayedText.length < fullResponseText.length) {
-                            if (abortControllerRef.current === controller) {
-                                requestAnimationFrame(updateUI);
-                            }
+                            requestAnimationFrame(updateUI);
                         } else {
                             setIsGenerating(false);
-                            if (abortControllerRef.current === controller) {
-                                abortControllerRef.current = null;
-                            }
+                            if (abortControllerRef.current === controller) abortControllerRef.current = null;
                             if (genId && currentProvider !== 'free') {
-                                setChats(prev => {
-                                     const chat = prev.find(c => c.id === currentChatId);
-                                     if (chat) setTimeout(() => pollCost(genId, currentChatId, chat.messages.length - 1), 0);
-                                     return prev;
-                                });
+                                pollCost(genId, currentChatId, modelMsgId);
                             }
                         }
                     };
-                    
                     requestAnimationFrame(updateUI);
 
                     const reader = res.body.getReader();
@@ -1043,56 +883,68 @@
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) break;
-                        
                         buffer += decoder.decode(value, { stream: true });
                         const lines = buffer.split('\n');
-                        buffer = lines.pop(); 
-                        
+                        buffer = lines.pop();
                         for (const line of lines) {
                             if (line.trim() === '') continue;
                             if (line.startsWith('data: ')) {
                                 const dataStr = line.slice(6);
                                 if (dataStr.trim() === '[DONE]') continue;
-                                
                                 try {
                                     const data = JSON.parse(dataStr);
                                     if (!genId && data.id) genId = data.id;
-                                    
                                     if (isFirstChunk) {
                                         setIsLoading(false);
                                         isFirstChunk = false;
                                         setChats(prev => prev.map(c => {
                                             if (c.id === currentChatId) {
-                                                const newMsgs = [...c.messages];
-                                                newMsgs[newMsgs.length - 1] = { ...newMsgs[newMsgs.length - 1], actualModel: data.model || "", isThinking: false };
-                                                return { ...c, messages: newMsgs };
+                                                return { ...c, messages: c.messages.map(m => m.id === modelMsgId ? { ...m, actualModel: data.model || "", isThinking: false } : m) };
                                             }
                                             return c;
                                         }));
                                     }
-
                                     const delta = data.choices?.[0]?.delta?.content || "";
-                                    if (delta) {
-                                        fullResponseText += delta; 
-                                    }
-                                } catch (e) {
-                                }
+                                    if (delta) fullResponseText += delta;
+                                } catch (e) { /* частичный JSON — игнорируем */ }
                             }
                         }
                     }
                     isStreamFinished = true;
 
+                    // ИСПРАВЛЕНО: если стрим завершился без текста — показываем сообщение о пустом ответе
+                    if (!fullResponseText) {
+                        setChats(prev => prev.map(c => {
+                            if (c.id === currentChatId) {
+                                return { ...c, messages: c.messages.map(m => m.id === modelMsgId ? { ...m, text: `⚠️ ${t.emptyResponse}`, isError: true, isThinking: false } : m) };
+                            }
+                            return c;
+                        }));
+                    }
+
                 } catch (e) {
-                    isStreamFinished = true;
+                    isStreamFinished = true; // теперь переменная в области видимости — без ReferenceError
+                    // ИСПРАВЛЕНО: заменяем «осиротевшее» thinking-сообщение, а не плодим новое
                     if (e.name === 'AbortError') {
-                        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { role: 'model', text: t.reqStopped, isError: true, isThinking: false }] } : c));
+                        setChats(prev => prev.map(c => {
+                            if (c.id === currentChatId) {
+                                return { ...c, messages: c.messages.map(m => m.id === modelMsgId ? { ...m, text: t.reqStopped, isError: true, isThinking: false } : m) };
+                            }
+                            return c;
+                        }));
                     } else {
-                        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { role: 'model', text: `⚠️ ${t.errorPrefix}${e.message}`, isError: true, isThinking: false }] } : c));
+                        setChats(prev => prev.map(c => {
+                            if (c.id === currentChatId) {
+                                return { ...c, messages: c.messages.map(m => m.id === modelMsgId ? { ...m, text: `⚠️ ${t.errorPrefix}${e.message}`, isError: true, isThinking: false } : m) };
+                            }
+                            return c;
+                        }));
                     }
                     setIsGenerating(false);
-                } finally { 
-                    setIsLoading(false); 
-                    fetchBalance(); 
+                    if (abortControllerRef.current === controller) abortControllerRef.current = null;
+                } finally {
+                    setIsLoading(false);
+                    fetchBalance();
                 }
             };
 
@@ -1111,7 +963,7 @@
                 }
                 return 'Flash';
             }, [provider, modelType]);
-            
+
             const providerName = useMemo(() => {
                 if (provider === 'gemini') return 'Gemini';
                 if (provider === 'chatgpt') return 'ChatGPT';
@@ -1125,30 +977,25 @@
                 return Math.min((balanceData.usage / balanceData.limit) * 100, 100);
             }, [balanceData]);
 
+            // ИСПРАВЛЕНО: сброс modelType на дефолтный при смене провайдера (чтобы не остаться на несуществующем 'gemma'/'flash3.5')
+            useEffect(() => {
+                const valid = {
+                    gemini: ['flash', 'flash3.5', 'pro'],
+                    chatgpt: ['flash', 'pro'],
+                    deepseek: ['flash', 'pro'],
+                    free: ['flash', 'gemma', 'pro']
+                };
+                if (!valid[provider]?.includes(modelType)) setModelType('flash');
+            }, [provider]);
+
             return (
                 <div className="flex h-screen w-full text-[var(--text-primary)] bg-[var(--bg-body)] overflow-hidden">
-                    <button 
-                        onClick={() => setSafeMode(!safeMode)} 
-                        className="fixed bottom-0 right-0 w-6 h-6 z-[100] cursor-default opacity-5 hover:opacity-100 transition-opacity duration-500 bg-[var(--safe-btn)]"
-                        title="Toggle View"
-                    ></button>
+                    <button onClick={() => setSafeMode(!safeMode)} className="fixed bottom-0 right-0 w-6 h-6 z-[100] cursor-default opacity-5 hover:opacity-100 transition-opacity duration-500 bg-[var(--safe-btn)]" title="Toggle View"></button>
 
-                    {safeMode && (
-                        <div 
-                            className="hidden md:block fixed top-0 left-0 w-4 h-full z-[60]"
-                            onMouseEnter={() => setIsSidebarHovered(true)}
-                        ></div>
-                    )}
+                    {safeMode && (<div className="hidden md:block fixed top-0 left-0 w-4 h-full z-[60]" onMouseEnter={() => setIsSidebarHovered(true)}></div>)}
 
-                    <aside 
-                        className={`
-                            fixed inset-y-0 left-0 z-50 w-[300px] bg-[var(--bg-sidebar)] transition-transform duration-300 flex flex-col border-r border-transparent
-                            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                            ${safeMode 
-                                ? `md:fixed ${isSidebarHovered ? 'md:translate-x-0 shadow-2xl' : 'md:-translate-x-[300px]'}` 
-                                : 'md:translate-x-0 md:static'
-                            }
-                        `}
+                    <aside
+                        className={`fixed inset-y-0 left-0 z-50 w-[300px] bg-[var(--bg-sidebar)] transition-transform duration-300 flex flex-col border-r border-transparent ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${safeMode ? `md:fixed ${isSidebarHovered ? 'md:translate-x-0 shadow-2xl' : 'md:-translate-x-[300px]'}` : 'md:translate-x-0 md:static'}`}
                         onMouseLeave={() => safeMode && setIsSidebarHovered(false)}
                         onMouseEnter={() => safeMode && setIsSidebarHovered(true)}
                     >
@@ -1175,33 +1022,19 @@
                                 <Icon name="settings" className="w-5 h-5 text-[var(--text-secondary)]" />
                                 <span>{t.settings}</span>
                             </button>
-                            
+
                             {!safeMode && (
-                                <div 
-                                    className="mt-4 px-3 flex flex-col gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-                                    onClick={fetchBalance}
-                                    title="Нажмите, чтобы обновить"
-                                >
+                                <div className="mt-4 px-3 flex flex-col gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={fetchBalance} title="Нажмите, чтобы обновить">
                                     <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-secondary)]">
                                         <span>{t.balanceLabel}</span>
-                                        <span>
-                                            {balanceData 
-                                                ? `${balancePercentage.toFixed(1)}%` 
-                                                : '...'}
-                                        </span>
+                                        <span>{balanceData ? `${balancePercentage.toFixed(1)}%` : '...'}</span>
                                     </div>
                                     <div className="w-full h-1.5 bg-[var(--border-color)] rounded-full overflow-hidden">
-                                        <div 
-                                            className="h-full bg-[var(--accent-blue)] transition-all duration-500 ease-out"
-                                            style={{ width: `${balancePercentage}%` }}
-                                        ></div>
+                                        <div className="h-full bg-[var(--accent-blue)] transition-all duration-500 ease-out" style={{ width: `${balancePercentage}%` }}></div>
                                     </div>
                                 </div>
                             )}
-                            
-                            <div className="mt-6 text-center text-[10px] text-[var(--text-secondary)] opacity-40 font-mono tracking-widest cursor-default">
-                                {APP_VERSION}
-                            </div>
+                            <div className="mt-6 text-center text-[10px] text-[var(--text-secondary)] opacity-40 font-mono tracking-widest cursor-default">{APP_VERSION}</div>
                         </div>
                     </aside>
 
@@ -1209,15 +1042,13 @@
                         <div className="md:hidden flex items-center justify-between p-4 bg-[var(--bg-body)]">
                             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}><Icon name="menu" className="w-6 h-6 text-[var(--text-secondary)]" /></button>
                             <span className="font-medium text-[var(--text-primary)]">{safeMode ? 'Workspace' : providerName}</span>
-                            <div className="w-8"></div> 
+                            <div className="w-8"></div>
                         </div>
 
                         <div className="hidden md:flex justify-between items-center p-4 absolute top-0 left-0 right-0 z-10 bg-[var(--bg-body)]">
                             <div className="relative">
                                 {safeMode ? (
-                                     <div className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)]">
-                                        <span className="text-lg font-medium">Workspace</span>
-                                     </div>
+                                    <div className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)]"><span className="text-lg font-medium">Workspace</span></div>
                                 ) : (
                                     <button onClick={() => setIsModelMenuOpen(!isModelMenuOpen)} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
                                         <ProviderIcon provider={provider} theme={theme} className={`w-5 h-5`} active={true} />
@@ -1285,6 +1116,13 @@
                                 )}
                             </div>
                             <div className="flex items-center gap-4">
+                                {/* ИСПРАВЛЕНО: переключатель веб-поиска */}
+                                {!safeMode && (
+                                    <button onClick={toggleWebSearch} className={`flex items-center gap-2 px-3 py-2 rounded-full border transition-colors text-sm font-medium ${webSearch ? 'bg-[var(--accent-blue)] text-black border-transparent' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border-[var(--border-color)] hover:bg-[var(--hover-bg)]'}`} title={t.webSearch}>
+                                        <Icon name="globe" className="w-4 h-4" />
+                                        <span>{t.webSearch}</span>
+                                    </button>
+                                )}
                                 {!safeMode && (
                                     <a href="https://openrouter.ai" target="_blank" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" title={t.officialSite}>
                                         <span className="text-sm font-medium">{t.officialSite}</span>
@@ -1301,10 +1139,10 @@
                                 ) : activeChat?.messages.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center mt-20 animate-slide-up">
                                         {safeMode ? (
-                                             <div className="text-center opacity-30 mt-32">
-                                                 <Icon name="pen-tool" className="w-16 h-16 mx-auto mb-4" />
-                                                 <p>Начни печатать, чтобы создать заметку...</p>
-                                             </div>
+                                            <div className="text-center opacity-30 mt-32">
+                                                <Icon name="pen-tool" className="w-16 h-16 mx-auto mb-4" />
+                                                <p>Начни печатать, чтобы создать заметку...</p>
+                                            </div>
                                         ) : (
                                             <>
                                                 <h1 className="text-5xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] mb-4 text-center">{t.greeting}, {nickname || t.guest}</h1>
@@ -1313,23 +1151,20 @@
                                         )}
                                     </div>
                                 ) : (
-                                    activeChat?.messages.map((msg, idx) => {
+                                    activeChat?.messages.map((msg) => {
                                         let MsgIconProvider = msg.provider || provider;
                                         if (msg.provider === 'free') {
                                             if (msg.modelType === 'gemma') MsgIconProvider = 'gemma';
                                             else if (msg.modelType === 'pro') MsgIconProvider = 'meta';
                                             else MsgIconProvider = 'router';
                                         }
-
                                         return (
-                                            <div key={idx} className="mb-8 animate-slide-up">
+                                            <div key={msg.id} className="mb-8 animate-slide-up">
                                                 {msg.role === 'user' && (
                                                     <div className="flex flex-col items-end mb-2">
                                                         {msg.attachments && msg.attachments.length > 0 && (
                                                             <div className="flex flex-wrap gap-2 justify-end mb-2 max-w-[80%]">
-                                                                {msg.attachments.map((att, i) => (
-                                                                    <img key={i} src={att.base64} className="max-w-[200px] max-h-[200px] object-cover rounded-2xl border border-[var(--border-color)] shadow-sm" alt="User upload" />
-                                                                ))}
+                                                                {msg.attachments.map((att, i) => (<img key={i} src={att.base64} className="max-w-[200px] max-h-[200px] object-cover rounded-2xl border border-[var(--border-color)] shadow-sm" alt="User upload" />))}
                                                             </div>
                                                         )}
                                                         {msg.text && (
@@ -1348,11 +1183,8 @@
                                                         )}
                                                         <div className={`flex-1 overflow-visible relative ${msg.isError ? 'text-red-400' : 'text-[var(--text-primary)]'}`}>
                                                             {!safeMode && MsgIconProvider === 'router' && msg.actualModel && (
-                                                                <div className="text-[10px] text-[var(--text-secondary)] mb-1 opacity-60 font-mono tracking-wide">
-                                                                    {msg.actualModel}
-                                                                </div>
+                                                                <div className="text-[10px] text-[var(--text-secondary)] mb-1 opacity-60 font-mono tracking-wide">{msg.actualModel}</div>
                                                             )}
-                                                            
                                                             {msg.isThinking ? (
                                                                 <div className="flex items-center gap-1.5 h-7 px-2">
                                                                     <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-bounce"></div>
@@ -1362,13 +1194,10 @@
                                                             ) : (
                                                                 <MarkdownRenderer content={msg.text} />
                                                             )}
-                                                            
                                                             {!safeMode && !msg.isError && !msg.isThinking && msg.provider !== 'free' && msg.cost > 0 && (
                                                                 <div className="mt-2 flex items-center gap-1.5 w-fit bg-[var(--cost-bg)] border border-[var(--border-color)] px-2 py-0.5 rounded-full transition-opacity duration-200 opacity-0 group-hover:opacity-100">
                                                                     <Icon name="credit-card" className="w-3 h-3 text-[var(--text-secondary)]" />
-                                                                    <span className="text-[10px] font-mono text-[var(--text-secondary)] leading-none">
-                                                                        {msg.cost > 0 ? `$${msg.cost.toFixed(6)}` : '...'}
-                                                                    </span>
+                                                                    <span className="text-[10px] font-mono text-[var(--text-secondary)] leading-none">{`$${msg.cost.toFixed(6)}`}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1403,9 +1232,7 @@
                                         </button>
                                     )}
                                     <input type="file" id="file-upload" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-
-                                    <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} onPaste={handlePaste} placeholder={t.inputPlaceholder} className="flex-1 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none resize-none py-2 px-1 min-h-[40px] max-h-[200px]" rows={1} style={{ height: 'auto' }} />
-                                    
+                                    <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} onPaste={handlePaste} placeholder={t.inputPlaceholder} className="flex-1 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none resize-none py-2 px-1 min-h-[40px] max-h-[200px]" rows={1} style={{ height: 'auto' }} />
                                     {isGenerating ? (
                                         <button onClick={handleStopGeneration} className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full mr-1 transition-all text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 mb-0.5" title={t.stop}>
                                             <div className="w-4 h-4 bg-current rounded-[2px]"></div>
@@ -1424,27 +1251,19 @@
                                         <h2 className="text-xl font-bold">{t.settings}</h2>
                                         <button onClick={() => setIsSettingsOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 rounded-full hover:bg-[var(--hover-bg)] transition-colors"><Icon name="x" className="w-5 h-5" /></button>
                                     </div>
-                                    
                                     <div className="p-6 overflow-y-auto space-y-8 scrollbar-slim">
                                         <div className="space-y-4">
                                             <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsAI}</h3>
-                                            
-                                            <button 
-                                                onClick={openMemoryModal}
-                                                className="w-full flex items-center gap-4 p-4 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] rounded-xl transition-all text-left border border-[var(--border-color)] group"
-                                            >
-                                                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl transition-colors" style={{background: 'color-mix(in srgb, var(--accent-blue) 15%, transparent)'}}>
+                                            <button onClick={openMemoryModal} className="w-full flex items-center gap-4 p-4 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] rounded-xl transition-all text-left border border-[var(--border-color)] group">
+                                                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl transition-colors" style={{ background: 'color-mix(in srgb, var(--accent-blue) 15%, transparent)' }}>
                                                     <BotIcon className="w-5 h-5" />
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="font-medium text-[var(--text-primary)]">{t.systemInstructions}</div>
                                                     <div className="text-xs text-[var(--text-secondary)] mt-0.5">{t.sysInstDescription}</div>
                                                 </div>
-                                                <div className="flex-shrink-0">
-                                                    <Icon name="chevron-right" className="w-4 h-4 text-[var(--text-secondary)]" />
-                                                </div>
+                                                <div className="flex-shrink-0"><Icon name="chevron-right" className="w-4 h-4 text-[var(--text-secondary)]" /></div>
                                             </button>
-
                                             <div>
                                                 <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.provider}</label>
                                                 <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
@@ -1474,7 +1293,6 @@
 
                                         <div className="space-y-4">
                                             <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsAppearance}</h3>
-                                            
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
                                                     <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.theme}</label>
@@ -1491,7 +1309,6 @@
                                                     </div>
                                                 </div>
                                             </div>
-
                                             <div>
                                                 <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.tabTitleSetting}</label>
                                                 <input type="text" value={tempTabTitle} onChange={e => setTempTabTitle(e.target.value)} placeholder={t.tabTitlePlaceholder} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-sm transition-colors" />
@@ -1502,7 +1319,6 @@
 
                                         <div className="space-y-4">
                                             <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsData}</h3>
-                                            
                                             <div>
                                                 <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.yourName}</label>
                                                 <input type="text" value={tempNickname} onChange={e => setTempNickname(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-sm transition-colors" />
@@ -1512,9 +1328,7 @@
                                                 <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] font-mono text-sm transition-colors" />
                                             </div>
                                         </div>
-
                                     </div>
-                                    
                                     <div className="p-6 border-t border-[var(--border-color)] flex justify-between items-center gap-4 bg-[var(--bg-surface)] rounded-b-2xl z-10">
                                         <button onClick={clearAllHistory} className="px-5 py-2.5 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-full text-sm font-medium transition-colors">{t.clearHistory}</button>
                                         <button onClick={saveSettings} className="px-8 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium hover:opacity-90 transition-opacity ml-auto">{t.save}</button>
@@ -1531,16 +1345,8 @@
                                         <button onClick={() => setIsMemoryModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 rounded-full hover:bg-[var(--hover-bg)] transition-colors"><Icon name="x" className="w-5 h-5" /></button>
                                     </div>
                                     <div className="p-6 flex-1 overflow-y-auto">
-                                        <textarea 
-                                            value={tempSystemInstruction} 
-                                            onChange={e => setTempSystemInstruction(e.target.value)} 
-                                            placeholder={t.sysInstPlaceholder}
-                                            className="w-full h-64 p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] resize-none leading-relaxed"
-                                            autoFocus
-                                        />
-                                        <p className="mt-4 text-sm text-[var(--text-secondary)]">
-                                            {t.sysInstDescription}
-                                        </p>
+                                        <textarea value={tempSystemInstruction} onChange={e => setTempSystemInstruction(e.target.value)} placeholder={t.sysInstPlaceholder} className="w-full h-64 p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] resize-none leading-relaxed" autoFocus />
+                                        <p className="mt-4 text-sm text-[var(--text-secondary)]">{t.sysInstDescription}</p>
                                     </div>
                                     <div className="p-6 border-t border-[var(--border-color)] flex justify-end gap-3">
                                         <button onClick={() => setIsMemoryModalOpen(false)} className="px-6 py-2.5 text-[var(--text-primary)] hover:bg-[var(--hover-bg)] rounded-full transition-colors font-medium">{t.cancel}</button>
@@ -1567,11 +1373,7 @@
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(
-            <ErrorBoundary>
-                <App />
-            </ErrorBoundary>
-        );
+        root.render(<ErrorBoundary><App /></ErrorBoundary>);
     </script>
 </body>
 </html>
