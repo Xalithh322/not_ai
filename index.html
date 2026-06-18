@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NOT ai</title>
+    <title>not ai</title>
     
     <!-- Используем надежные, зафиксированные по версиям CDN от jsDelivr -->
     <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
     <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script> 
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.435.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.453.0/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -105,7 +105,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo, Component } = React;
 
-        const APP_VERSION = "v3.4.2";
+        const APP_VERSION = "v3.5.0";
 
         // --- Безопасная обертка для localStorage ---
         const safeStorage = {
@@ -138,20 +138,33 @@
             const spanRef = useRef(null);
 
             useEffect(() => {
+                let active = true;
                 const tryInit = () => {
+                    if (!active) return;
                     if (spanRef.current && window.lucide) {
                         spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className || ''}"></i>`;
-                        window.lucide.createIcons({ root: spanRef.current });
+                        try {
+                            window.lucide.createIcons({ root: spanRef.current });
+                        } catch (e) {
+                            console.error("Lucide rendering error:", e);
+                        }
                     }
                 };
 
                 tryInit();
 
-                if (!window.lucide) {
-                    const t1 = setTimeout(tryInit, 100);
-                    const t2 = setTimeout(tryInit, 400);
-                    return () => { clearTimeout(t1); clearTimeout(t2); };
-                }
+                const interval = setInterval(() => {
+                    if (window.lucide && spanRef.current && !spanRef.current.querySelector('svg')) {
+                        tryInit();
+                    } else if (window.lucide) {
+                        clearInterval(interval);
+                    }
+                }, 100);
+
+                return () => {
+                    active = false;
+                    clearInterval(interval);
+                };
             }, [name, className]);
 
             return (
@@ -321,7 +334,7 @@
                 inputPlaceholder: 'Напиши свой запрос...',
                 yourName: 'Твое имя',
                 tabTitleSetting: 'Название вкладки',
-                tabTitlePlaceholder: 'AI Workspace',
+                tabTitlePlaceholder: 'not ai',
                 theme: 'Тема',
                 language: 'Язык',
                 apiKey: 'OpenRouter API Key',
@@ -362,65 +375,69 @@
                 settingsAI: 'ИИ и поведение',
                 settingsAppearance: 'Внешний вид',
                 settingsData: 'Данные аккаунта',
-                attachPhoto: 'Прикрепить фото'
+                attachPhoto: 'Прикрепить фото',
+                webSearch: 'Поиск в интернете',
+                webSearchDesc: 'Модель будет искать информацию в интернете в реальном времени для ответа на запрос.'
             },
-            en: {
-                newChat: 'New Chat',
-                newChatSafe: 'New Note',
-                recent: 'Recent',
-                settings: 'Settings',
-                officialSite: 'OpenRouter Website',
-                greeting: 'Hello',
-                helpPrompt: 'How can I help you today?',
-                guest: 'Guest',
-                thinking: 'Thinking...',
+            da: {
+                newChat: 'Ny chat',
+                newChatSafe: 'Ny note',
+                recent: 'Seneste',
+                settings: 'Indstillinger',
+                officialSite: 'Officiel OpenRouter webside',
+                greeting: 'Hej',
+                helpPrompt: 'Hvordan kan jeg hjælpe dig i dag?',
+                guest: 'Gæst',
+                thinking: 'Tænker...',
                 send: 'Send',
-                stop: 'Stop generating',
-                inputPlaceholder: 'Enter your prompt...',
-                yourName: 'Your Name',
-                tabTitleSetting: 'Tab Title',
-                tabTitlePlaceholder: 'AI Workspace',
-                theme: 'Theme',
-                language: 'Language',
+                stop: 'Stop generering',
+                inputPlaceholder: 'Indtast din besked...',
+                yourName: 'Dit navn',
+                tabTitleSetting: 'Fanebladstitel',
+                tabTitlePlaceholder: 'not ai',
+                theme: 'Tema',
+                language: 'Sprog',
                 apiKey: 'OpenRouter API Key',
-                close: 'Close',
-                cancel: 'Cancel',
-                save: 'Save',
-                welcome: 'Welcome!',
-                askName: 'What should I call you?',
-                namePlaceholder: 'Enter your name',
-                startChat: 'Start chatting',
-                modelFlash: 'Fast next-generation model',
-                modelPro: 'Most capable model for complex tasks',
-                chatgptFlash: 'Versatile model for everyday tasks',
-                chatgptPro: 'Logical, for precise calculations (Much smarter than 5.4 mini, but slower to respond)',
-                deepseekChatDesc: 'Optimal balance of speed and intelligence',
-                deepseekR1Desc: 'Deep reasoning for complex tasks',
-                freeModelsLabel: 'Cheap Models',
+                close: 'Luk',
+                cancel: 'Annuller',
+                save: 'Gem',
+                welcome: 'Velkommen!',
+                askName: 'Hvad skal jeg kalde dig?',
+                namePlaceholder: 'Indtast dit navn',
+                startChat: 'Start chat',
+                modelFlash: 'Hurtig næste-generations model',
+                modelPro: 'Mest kraftfulde model til komplekse opgaver',
+                chatgptFlash: 'Alsidig model til hverdagsopgaver',
+                chatgptPro: 'Logisk, til præcise beregninger (Meget klogere end 5.4 mini, men langsommere)',
+                deepseekChatDesc: 'Optimal balance mellem hastighed og intelligens',
+                deepseekR1Desc: 'Dyb tænkning til komplekse opgaver',
+                freeModelsLabel: 'Billige modeller',
                 freeAutoLabel: 'OpenRouter Auto',
-                freeAutoDesc: 'Automatic search for the best free neural network',
-                freeGemmaDesc: 'Lightweight and smart model from Google',
-                freeLlamaDesc: 'Reliable base for texts of any complexity + Easy math tasks.',
-                connected: 'Server: Connected',
-                emptyResponse: 'Empty response',
-                requestError: 'Request error',
-                errorPrefix: 'Error: ',
-                systemInstructions: 'System Instructions',
-                sysInstDescription: 'Specify how the model should behave.',
-                sysInstPlaceholder: 'E.g., "You are an experienced programmer..."',
-                balanceLabel: 'Balance:',
-                clearHistory: 'Clear History',
-                provider: 'AI Provider',
-                reqStopped: '⚠️ Request was stopped.',
-                costLabel: 'Cost:',
-                descGemini: 'Universal Google models. Fast with large context window.',
-                descChatGPT: 'Powerful OpenAI models. Great for logic and code.',
-                descDeepSeek: 'Advanced models. Includes R1 – a deep reasoning model.',
-                descFree: 'Access to budget models with low balance consumption.',
-                settingsAI: 'AI & Behavior',
-                settingsAppearance: 'Appearance',
-                settingsData: 'Account Data',
-                attachPhoto: 'Attach photo'
+                freeAutoDesc: 'Automatisk søgning efter den bedste gratis model',
+                freeGemmaDesc: 'Let og kvik model fra Google',
+                freeLlamaDesc: 'Pålidelig base for tekster af enhver sværhedsgrad + nem matematik.',
+                connected: 'Server: Forbundet',
+                emptyResponse: 'Tomt svar fra serveren',
+                requestError: 'Anmodningsfejl',
+                errorPrefix: 'Fejl: ',
+                systemInstructions: 'Systeminstruktioner',
+                sysInstDescription: 'Angiv, hvordan modellen skal opføre sig (f.eks.: "Du er en erfaren programmør...").',
+                sysInstPlaceholder: 'Skriv instruktioner her...',
+                balanceLabel: 'Saldo:',
+                clearHistory: 'Ryd historik',
+                provider: 'AI Udbyder',
+                reqStopped: '⚠️ Anmodningen blev stoppet.',
+                costLabel: 'Pris:',
+                descGemini: 'Alsidige modeller fra Google. Hurtige med stort kontekstvindue.',
+                descChatGPT: 'Kraftfulde OpenAI modeller. Fremragende til logik og kode.',
+                descDeepSeek: 'Avancerede modeller. Inkluderer R1 – en model med dyb tænkning.',
+                descFree: 'Adgang til budgetvenlige modeller med lavt API-forbrug.',
+                settingsAI: 'AI & Adfærd',
+                settingsAppearance: 'Udseende',
+                settingsData: 'Kontodata',
+                attachPhoto: 'Vedhæft billede',
+                webSearch: 'Søg på nettet',
+                webSearchDesc: 'Modellen vil søge på nettet i realtid for at besvare dit spørgsmål.'
             }
         };
 
@@ -461,7 +478,7 @@
             const [theme, setTheme] = useState(safeStorage.getItem('gemini_theme') || 'dark');
             const [language, setLanguage] = useState(safeStorage.getItem('gemini_language') || 'ru');
             const [nickname, setNickname] = useState(safeStorage.getItem('gemini_nickname') || '');
-            const [tabTitle, setTabTitle] = useState(safeStorage.getItem('gemini_tab_title') || 'AI Workspace');
+            const [tabTitle, setTabTitle] = useState(safeStorage.getItem('gemini_tab_title') || 'not ai');
             const [systemInstruction, setSystemInstruction] = useState(safeStorage.getItem('gemini_system_instruction') || '');
             const [safeMode, setSafeMode] = useState(false); 
             const [provider, setProvider] = useState(safeStorage.getItem('app_provider') || 'gemini');
@@ -469,7 +486,7 @@
             
             const [chats, setChats] = useState([]);
             const [isChatsLoaded, setIsChatsLoaded] = useState(false); 
-            const [loadError, setLoadError] = useState(false); // Защита от перезаписи при ошибке загрузки
+            const [loadError, setLoadError] = useState(false); 
 
             const [activeChatId, setActiveChatId] = useState(null);
             const [input, setInput] = useState('');
@@ -485,6 +502,9 @@
             const [modelType, setModelType] = useState('flash');
             const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
 
+            // Состояние интернет-поиска OpenRouter
+            const [webSearchEnabled, setWebSearchEnabled] = useState(safeStorage.getItem('web_search_enabled') === 'true');
+
             const [tempTheme, setTempTheme] = useState(theme);
             const [tempLanguage, setTempLanguage] = useState(language);
             const [tempNickname, setTempNickname] = useState(nickname);
@@ -492,6 +512,7 @@
             const [tempApiKey, setTempApiKey] = useState(apiKey);
             const [tempSystemInstruction, setTempSystemInstruction] = useState('');
             const [tempProvider, setTempProvider] = useState(provider);
+            const [tempWebSearchEnabled, setTempWebSearchEnabled] = useState(webSearchEnabled);
 
             const textareaRef = useRef(null);
             const abortControllerRef = useRef(null);
@@ -520,7 +541,7 @@
 
             useEffect(() => {
                 if (safeMode) document.title = "Workspace";
-                else document.title = tabTitle || "AI Workspace";
+                else document.title = tabTitle || "not ai";
             }, [safeMode, tabTitle]);
 
             useEffect(() => {
@@ -586,7 +607,7 @@
                         }
                     } catch (e) {
                         console.error("DB Load Error", e);
-                        setLoadError(true); // Защищаем данные от случайной перезаписи пустой сессией
+                        setLoadError(true); 
                         createNewChat();
                     } finally {
                         setIsChatsLoaded(true);
@@ -596,7 +617,6 @@
             }, []);
 
             useEffect(() => {
-                // Сохраняем ТОЛЬКО если база данных загружена успешно и без критических сбоев
                 if (isChatsLoaded && !loadError) { 
                     const timer = setTimeout(() => {
                         db.saveChats(chats).catch(e => console.error("Save Error", e));
@@ -635,6 +655,7 @@
                 setTempTabTitle(tabTitle);
                 setTempApiKey(apiKey);
                 setTempProvider(provider);
+                setTempWebSearchEnabled(webSearchEnabled);
                 setIsSettingsOpen(true);
             };
 
@@ -647,16 +668,21 @@
                 setTabTitle(finalTab);
                 setApiKey(tempApiKey);
                 setProvider(tempProvider);
+                setWebSearchEnabled(tempWebSearchEnabled);
                 safeStorage.setItem('gemini_nickname', finalName);
                 safeStorage.setItem('gemini_tab_title', finalTab);
                 safeStorage.setItem('gemini_user_api_key', tempApiKey);
                 safeStorage.setItem('app_provider', tempProvider);
+                safeStorage.setItem('web_search_enabled', tempWebSearchEnabled ? 'true' : 'false');
                 setIsSettingsOpen(false);
                 fetchBalance(); 
             };
 
             const clearAllHistory = async () => {
-                if(confirm(language === 'ru' ? "Удалить ВСЮ историю из базы данных? Это нельзя отменить." : "Delete ALL history? This cannot be undone.")) {
+                const confirmMsg = language === 'ru' 
+                    ? "Удалить ВСЮ историю из базы данных? Это нельзя отменить." 
+                    : "Slet hele din historik? Dette kan ikke fortrydes.";
+                if(confirm(confirmMsg)) {
                     await db.clear();
                     safeStorage.removeItem('gemini_chats_v4'); 
                     setChats([]);
@@ -862,7 +888,9 @@
                                     { role: 'user', text: userText, attachments: activeAttachments },
                                     { 
                                         role: 'model', 
-                                        text: language === 'ru' ? `⚠️ **Ошибка:** Выбранная нейросеть не поддерживает работу с фотографиями. Пожалуйста, отправляйте только текст или выберите другую модель (например, Gemini, ChatGPT, Llama 3.3 или Gemma 4).` : `⚠️ **Error:** The selected model does not support images. Please send text only or select another model (e.g., Gemini, ChatGPT, Llama 3.3, or Gemma 4).`,
+                                        text: language === 'ru' 
+                                            ? `⚠️ **Ошибка:** Выбранная нейросеть не поддерживает работу с фотографиями. Пожалуйста, отправляйте только текст или выберите другую модель (например, Gemini, ChatGPT, Llama 3.3 или Gemma 4).` 
+                                            : `⚠️ **Fejl:** Den valgte model understøtter ikke billeder. Send venligst kun tekst eller vælg en anden model (f.eks. Gemini, ChatGPT, Llama 3.3 eller Gemma 4).`,
                                         isError: true, 
                                         provider: currentProvider 
                                     }
@@ -901,7 +929,9 @@
                 try {
                     let modelName = "";
                     if (provider === 'gemini') {
-                        modelName = modelType === 'pro' ? 'google/gemini-3.1-pro-preview' : 'google/gemini-3-flash-preview';
+                        if (modelType === 'pro') modelName = 'google/gemini-3.1-pro-preview';
+                        else if (modelType === 'flash3.5') modelName = 'google/gemini-3.5-flash';
+                        else modelName = 'google/gemini-3-flash-preview';
                     } else if (provider === 'chatgpt') {
                         modelName = modelType === 'pro' ? 'openai/o4-mini' : 'openai/gpt-5.4-mini';
                     } else if (provider === 'deepseek') {
@@ -955,14 +985,16 @@
                         headers: { 
                             'Authorization': `Bearer ${apiKey}`,
                             'HTTP-Referer': window.location.href,
-                            'X-Title': 'AI Workspace',
+                            'X-Title': 'not ai',
                             'Content-Type': 'application/json' 
                         }, 
                         body: JSON.stringify({
                             model: modelName,
                             messages: openRouterMessages,
                             max_tokens: maxTokensLimit,
-                            stream: true 
+                            stream: true,
+                            // Активация веб-поиска OpenRouter в реальном времени
+                            ...(webSearchEnabled ? { provider: { require_search: true } } : {})
                         }),
                         signal: controller.signal
                     });
@@ -1076,7 +1108,11 @@
             };
 
             const modelDisplay = useMemo(() => {
-                if (provider === 'gemini') return modelType === 'pro' ? 'Pro 3.1' : 'Flash 3';
+                if (provider === 'gemini') {
+                    if (modelType === 'pro') return 'Pro 3.1';
+                    if (modelType === 'flash3.5') return 'Flash 3.5';
+                    return 'Flash 3';
+                }
                 if (provider === 'chatgpt') return modelType === 'pro' ? 'o4-mini' : '5.4-mini';
                 if (provider === 'deepseek') return modelType === 'pro' ? 'R1' : 'Chat V3.1';
                 if (provider === 'free') {
@@ -1197,7 +1233,7 @@
                                     <button onClick={() => setIsModelMenuOpen(!isModelMenuOpen)} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
                                         <ProviderIcon provider={provider} theme={theme} className={`w-5 h-5`} active={true} />
                                         <span className="text-lg font-medium ml-2">{providerName}</span>
-                                        <span className={`text-sm px-2 py-0.5 rounded ml-2 ${modelType === 'pro' || modelType === 'gemma' ? 'bg-[var(--text-primary)] text-[var(--bg-body)]' : 'bg-[var(--border-color)] text-[var(--text-primary)]'}`}>{modelDisplay}</span>
+                                        <span className={`text-sm px-2 py-0.5 rounded ml-2 ${modelType === 'pro' || modelType === 'gemma' || modelType === 'flash3.5' ? 'bg-[var(--text-primary)] text-[var(--bg-body)]' : 'bg-[var(--border-color)] text-[var(--text-primary)]'}`}>{modelDisplay}</span>
                                         <Icon name="chevron-down" className={`w-4 h-4 transition-transform ml-1 ${isModelMenuOpen ? 'rotate-180' : ''}`} />
                                     </button>
                                 )}
@@ -1208,6 +1244,10 @@
                                                 <button onClick={() => { setModelType('flash'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash' ? 'bg-[var(--hover-bg)]' : ''}`}>
                                                     <GeminiIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'flash'} />
                                                     <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemini 3 Flash</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.modelFlash}</div></div>
+                                                </button>
+                                                <button onClick={() => { setModelType('flash3.5'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash3.5' ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                                    <GeminiIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'flash3.5'} />
+                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemini 3.5 Flash</div><div className="text-xs text-[var(--text-secondary)] mt-1">{language === 'ru' ? 'Новейшая быстрая модель' : 'Nyeste hurtige model'}</div></div>
                                                 </button>
                                                 <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
                                                     <GeminiIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'pro'} />
@@ -1375,6 +1415,22 @@
                                     )}
                                     <input type="file" id="file-upload" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
 
+                                    {/* Быстрая кнопка веб-поиска (глобус) */}
+                                    {!safeMode && (
+                                        <button 
+                                            onClick={() => {
+                                                const newVal = !webSearchEnabled;
+                                                setWebSearchEnabled(newVal);
+                                                setTempWebSearchEnabled(newVal);
+                                                safeStorage.setItem('web_search_enabled', newVal ? 'true' : 'false');
+                                            }} 
+                                            className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full transition-colors mb-0.5 ${webSearchEnabled ? 'text-[var(--accent-blue)] bg-[var(--hover-bg)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`} 
+                                            title={t.webSearch}
+                                        >
+                                            <Icon name="globe" className="w-5 h-5" />
+                                        </button>
+                                    )}
+
                                     <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} onPaste={handlePaste} placeholder={t.inputPlaceholder} className="flex-1 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none resize-none py-2 px-1 min-h-[40px] max-h-[200px]" rows={1} style={{ height: 'auto' }} />
                                     
                                     {isGenerating ? (
@@ -1415,6 +1471,28 @@
                                                     <Icon name="chevron-right" className="w-4 h-4 text-[var(--text-secondary)]" />
                                                 </div>
                                             </button>
+
+                                            {/* Полноразмерный тумблер поиска в настройках */}
+                                            <div className="flex items-center justify-between p-4 bg-[var(--bg-input)] rounded-xl border border-[var(--border-color)]">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl" style={{background: 'color-mix(in srgb, var(--accent-blue) 15%, transparent)'}}>
+                                                        <Icon name="globe" className="w-5 h-5 text-[var(--accent-blue)]" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-medium text-[var(--text-primary)]">{t.webSearch}</div>
+                                                        <div className="text-xs text-[var(--text-secondary)] mt-0.5 max-w-[200px] sm:max-w-xs">{t.webSearchDesc}</div>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => {
+                                                        const newVal = !tempWebSearchEnabled;
+                                                        setTempWebSearchEnabled(newVal);
+                                                    }}
+                                                    className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${tempWebSearchEnabled ? 'bg-[var(--accent-blue)]' : 'bg-[var(--border-color)]'}`}
+                                                >
+                                                    <div className={`bg-[var(--bg-surface)] w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${tempWebSearchEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                                                </button>
+                                            </div>
 
                                             <div>
                                                 <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.provider}</label>
@@ -1458,7 +1536,7 @@
                                                     <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.language}</label>
                                                     <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
                                                         <button onClick={() => setTempLanguage('ru')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempLanguage === 'ru' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>Русский</button>
-                                                        <button onClick={() => setTempLanguage('en')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempLanguage === 'en' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>English</button>
+                                                        <button onClick={() => setTempLanguage('da')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempLanguage === 'da' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>Dansk</button>
                                                     </div>
                                                 </div>
                                             </div>
