@@ -823,7 +823,9 @@
                         stream: true
                     };
                     // ИСПРАВЛЕНО: веб-поиск включается только если пользователь его выбрал
-                    if (webSearch) bodyPayload.plugins = [{ id: "web" }];
+                    if (currentProvider !== 'free') {
+                      bodyPayload.plugins = [{ id: "web" }];
+                    }
 
                     const res = await fetch(`${API_BASE}/v1/chat/completions`, {
                         method: 'POST',
