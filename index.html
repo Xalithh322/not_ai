@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI</title>
+    <title>noi ai</title>
     
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Используем надежные, зафиксированные по версиям CDN от jsDelivr -->
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script> 
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.435.0/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -104,7 +105,33 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo, Component } = React;
 
-        const APP_VERSION = "v3.4";
+        const APP_VERSION = "v3.4.1";
+
+        // --- Безопасная обертка для localStorage ---
+        const safeStorage = {
+            getItem: (key) => {
+                try {
+                    return localStorage.getItem(key);
+                } catch (e) {
+                    console.warn("Storage is blocked or unavailable:", e);
+                    return null;
+                }
+            },
+            setItem: (key, value) => {
+                try {
+                    localStorage.setItem(key, value);
+                } catch (e) {
+                    console.warn("Storage is blocked or unavailable:", e);
+                }
+            },
+            removeItem: (key) => {
+                try {
+                    localStorage.removeItem(key);
+                } catch (e) {
+                    console.warn("Storage is blocked or unavailable:", e);
+                }
+            }
+        };
 
         // --- Safe Icon Component (FIXED) ---
         const Icon = ({ name, className }) => {
@@ -206,7 +233,7 @@
             return <GeminiIcon className={className} active={active} />;
         };
 
-        // --- IndexedDB Wrapper ---
+        // --- Safe IndexedDB Wrapper ---
         const DB_NAME = 'GeminiChatDB';
         const STORE_NAME = 'chats';
         const DB_VERSION = 1;
@@ -214,44 +241,66 @@
         const db = {
             open: () => {
                 return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(DB_NAME, DB_VERSION);
-                    request.onupgradeneeded = (e) => {
-                        const db = e.target.result;
-                        if (!db.objectStoreNames.contains(STORE_NAME)) {
-                            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                        }
-                    };
-                    request.onsuccess = (e) => resolve(e.target.result);
-                    request.onerror = (e) => reject(e.target.error);
+                    if (!window.indexedDB) {
+                        reject(new Error("IndexedDB is not supported in this browser environment."));
+                        return;
+                    }
+                    try {
+                        const request = indexedDB.open(DB_NAME, DB_VERSION);
+                        request.onupgradeneeded = (e) => {
+                            const dbInstance = e.target.result;
+                            if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
+                                dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                            }
+                        };
+                        request.onsuccess = (e) => resolve(e.target.result);
+                        request.onerror = (e) => reject(e.target.error);
+                    } catch (err) {
+                        reject(err);
+                    }
                 });
             },
             saveChats: async (chats) => {
-                const database = await db.open();
-                return new Promise((resolve, reject) => {
-                    const tx = database.transaction(STORE_NAME, 'readwrite');
-                    const store = tx.objectStore(STORE_NAME);
-                    store.put({ id: 'all_chats', data: chats }); 
-                    tx.oncomplete = () => resolve();
-                    tx.onerror = (e) => reject(e.target.error);
-                });
+                try {
+                    const database = await db.open();
+                    return new Promise((resolve, reject) => {
+                        const tx = database.transaction(STORE_NAME, 'readwrite');
+                        const store = tx.objectStore(STORE_NAME);
+                        store.put({ id: 'all_chats', data: chats }); 
+                        tx.oncomplete = () => resolve();
+                        tx.onerror = (e) => reject(e.target.error);
+                    });
+                } catch (e) {
+                    console.error("Failed to save chats to DB:", e);
+                }
             },
             getChats: async () => {
-                const database = await db.open();
-                return new Promise((resolve, reject) => {
-                    const tx = database.transaction(STORE_NAME, 'readonly');
-                    const store = tx.objectStore(STORE_NAME);
-                    const request = store.get('all_chats');
-                    request.onsuccess = () => resolve(request.result ? request.result.data : []);
-                    request.onerror = (e) => reject(e.target.error);
-                });
+                try {
+                    const database = await db.open();
+                    return new Promise((resolve, reject) => {
+                        const tx = database.transaction(STORE_NAME, 'readonly');
+                        const store = tx.objectStore(STORE_NAME);
+                        const request = store.get('all_chats');
+                        request.onsuccess = () => resolve(request.result ? request.result.data : []);
+                        request.onerror = (e) => reject(e.target.error);
+                    });
+                } catch (e) {
+                    console.error("Failed to read chats from DB:", e);
+                    return [];
+                }
             },
             clear: async () => {
-                const database = await db.open();
-                return new Promise((resolve, reject) => {
-                    const tx = database.transaction(STORE_NAME, 'readwrite');
-                    tx.objectStore(STORE_NAME).clear();
-                    tx.oncomplete = () => resolve();
-                });
+                try {
+                    const database = await db.open();
+                    return new Promise((resolve, reject) => {
+                        const tx = database.transaction(STORE_NAME, 'readwrite');
+                        tx.objectStore(STORE_NAME).clear();
+                        tx.oncomplete = () => resolve();
+                        tx.onerror = (e) => reject(e.target.error);
+                    });
+                } catch (e) {
+                    console.error("Failed to clear DB:", e);
+                }
             }
         };
 
@@ -266,10 +315,10 @@
             render() {
                 if (this.state.hasError) {
                     return (
-                        <div className="flex items-center justify-center h-screen flex-col text-red-400 p-4 text-center">
+                        <div className="flex items-center justify-center h-screen flex-col text-red-400 p-4 text-center bg-[#131314]">
                             <h2 className="text-2xl font-bold mb-2">Ошибка приложения</h2>
                             <p className="text-sm opacity-80 mb-4">{String(this.state.error)}</p>
-                            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-[var(--accent-blue)] text-black rounded-full mt-4">Перезагрузить</button>
+                            <button onClick={() => { safeStorage.removeItem('gemini_language'); window.location.reload(); }} className="px-4 py-2 bg-[var(--accent-blue)] text-black rounded-full mt-4 font-semibold">Сбросить настройки и перезагрузить</button>
                         </div>
                     );
                 }
@@ -388,7 +437,7 @@
                 descGemini: 'Universal Google models. Fast with large context window.',
                 descChatGPT: 'Powerful OpenAI models. Great for logic and code.',
                 descDeepSeek: 'Advanced models. Includes R1 – a deep reasoning model.',
-                descFree: 'Access to budget models with low balance consumption. (pls use it)',
+                descFree: 'Access to budget models with low balance consumption.',
                 settingsAI: 'AI & Behavior',
                 settingsAppearance: 'Appearance',
                 settingsData: 'Account Data',
@@ -429,14 +478,14 @@
         const App = () => {
             const DEFAULT_KEY = "";
             
-            const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_user_api_key') || DEFAULT_KEY);
-            const [theme, setTheme] = useState(localStorage.getItem('gemini_theme') || 'dark');
-            const [language, setLanguage] = useState(localStorage.getItem('gemini_language') || 'ru');
-            const [nickname, setNickname] = useState(localStorage.getItem('gemini_nickname') || '');
-            const [tabTitle, setTabTitle] = useState(localStorage.getItem('gemini_tab_title') || 'AI Workspace');
-            const [systemInstruction, setSystemInstruction] = useState(localStorage.getItem('gemini_system_instruction') || '');
+            const [apiKey, setApiKey] = useState(safeStorage.getItem('gemini_user_api_key') || DEFAULT_KEY);
+            const [theme, setTheme] = useState(safeStorage.getItem('gemini_theme') || 'dark');
+            const [language, setLanguage] = useState(safeStorage.getItem('gemini_language') || 'ru');
+            const [nickname, setNickname] = useState(safeStorage.getItem('gemini_nickname') || '');
+            const [tabTitle, setTabTitle] = useState(safeStorage.getItem('gemini_tab_title') || 'AI Workspace');
+            const [systemInstruction, setSystemInstruction] = useState(safeStorage.getItem('gemini_system_instruction') || '');
             const [safeMode, setSafeMode] = useState(false); 
-            const [provider, setProvider] = useState(localStorage.getItem('app_provider') || 'gemini');
+            const [provider, setProvider] = useState(safeStorage.getItem('app_provider') || 'gemini');
             const [balanceData, setBalanceData] = useState(null);
             
             const [chats, setChats] = useState([]);
@@ -468,23 +517,24 @@
             const abortControllerRef = useRef(null);
             const chatContainerRef = useRef(null);
             const isUserScrolledUp = useRef(false);
-            // ── FIX: track last scroll position to detect direction ──
             const lastScrollTopRef = useRef(0);
             
-            const t = translations[language];
+            // Безопасный выбор перевода (защита от краша при неопределенном языке)
+            const activeLang = translations[language] ? language : 'ru';
+            const t = translations[activeLang];
 
             useEffect(() => {
                 document.documentElement.setAttribute('data-theme', theme);
-                localStorage.setItem('gemini_theme', theme);
+                safeStorage.setItem('gemini_theme', theme);
             }, [theme]);
             
             useEffect(() => {
-                localStorage.setItem('gemini_language', language);
+                safeStorage.setItem('gemini_language', language);
                 document.documentElement.lang = language;
             }, [language]);
 
             useEffect(() => {
-                const storedNick = localStorage.getItem('gemini_nickname');
+                const storedNick = safeStorage.getItem('gemini_nickname');
                 if (!storedNick) setIsWelcomeModalOpen(true);
                 else setNickname(storedNick);
             }, []);
@@ -541,7 +591,7 @@
                     try {
                         const savedChats = await db.getChats();
                         if (!savedChats || savedChats.length === 0) {
-                            const legacy = localStorage.getItem('gemini_chats_v4');
+                            const legacy = safeStorage.getItem('gemini_chats_v4');
                             if (legacy) {
                                 const parsedLegacy = JSON.parse(legacy);
                                 setChats(parsedLegacy);
@@ -574,7 +624,6 @@
                 }
             }, [chats, isChatsLoaded]);
 
-            // ── FIX: auto-scroll only when user hasn't scrolled up ──
             useEffect(() => {
                 if (!isUserScrolledUp.current && chatContainerRef.current) {
                     chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -594,7 +643,7 @@
             const saveNickname = (name) => {
                 const finalName = name.trim() || t.guest;
                 setNickname(finalName);
-                localStorage.setItem('gemini_nickname', finalName);
+                safeStorage.setItem('gemini_nickname', finalName);
                 setIsWelcomeModalOpen(false);
             };
 
@@ -617,10 +666,10 @@
                 setTabTitle(finalTab);
                 setApiKey(tempApiKey);
                 setProvider(tempProvider);
-                localStorage.setItem('gemini_nickname', finalName);
-                localStorage.setItem('gemini_tab_title', finalTab);
-                localStorage.setItem('gemini_user_api_key', tempApiKey);
-                localStorage.setItem('app_provider', tempProvider);
+                safeStorage.setItem('gemini_nickname', finalName);
+                safeStorage.setItem('gemini_tab_title', finalTab);
+                safeStorage.setItem('gemini_user_api_key', tempApiKey);
+                safeStorage.setItem('app_provider', tempProvider);
                 setIsSettingsOpen(false);
                 fetchBalance(); 
             };
@@ -628,7 +677,7 @@
             const clearAllHistory = async () => {
                 if(confirm(language === 'ru' ? "Удалить ВСЮ историю из базы данных? Это нельзя отменить." : "Delete ALL history? This cannot be undone.")) {
                     await db.clear();
-                    localStorage.removeItem('gemini_chats_v4'); 
+                    safeStorage.removeItem('gemini_chats_v4'); 
                     setChats([]);
                     createNewChat();
                     setIsSettingsOpen(false);
@@ -643,7 +692,7 @@
 
             const saveMemory = () => {
                 setSystemInstruction(tempSystemInstruction);
-                localStorage.setItem('gemini_system_instruction', tempSystemInstruction);
+                safeStorage.setItem('gemini_system_instruction', tempSystemInstruction);
                 setIsMemoryModalOpen(false);
             };
 
@@ -699,7 +748,6 @@
                 }
             };
 
-            // ── FIX: direction-aware scroll handler ──
             const handleChatScroll = () => {
                 if (!chatContainerRef.current) return;
                 const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
@@ -708,10 +756,8 @@
                 lastScrollTopRef.current = scrollTop;
 
                 if (isScrollingUp && distanceFromBottom > 80) {
-                    // User deliberately scrolled up — pause auto-scroll
                     isUserScrolledUp.current = true;
                 } else if (distanceFromBottom < 40) {
-                    // Close to bottom — resume auto-scroll
                     isUserScrolledUp.current = false;
                 }
             };
@@ -746,10 +792,10 @@
             };
 
             const generateChatTitle = async (chatId, userMessage) => {
-try {
-    const modelName = 'google/gemma-3-4b-it'; 
-    const prompt = `Generate a very short, concise, and natural title (maximum 3-5 words) for a chat that starts with the message below. The title must be in the same language as the message. Do not use quotes. Message: "${userMessage.slice(0, 500)}"`;
-                    
+                try {
+                    const modelName = 'google/gemma-3-4b-it'; 
+                    const prompt = `Generate a very short, concise, and natural title (maximum 3-5 words) for a chat that starts with the message below. The title must be in the same language as the message. Do not use quotes. Message: "${userMessage.slice(0, 500)}"`;
+                                        
                     const res = await fetch("/api/v1/chat/completions", {
                         method: 'POST',
                         headers: { 
@@ -808,7 +854,6 @@ try {
             const sendMessage = async () => {
                 if ((!input.trim() && attachments.length === 0) || !apiKey) return;
                 
-                // ── FIX: always jump to bottom and unlock auto-scroll on send ──
                 isUserScrolledUp.current = false;
                 lastScrollTopRef.current = 0;
                 if (chatContainerRef.current) {
@@ -820,7 +865,6 @@ try {
                 const isFirstMessage = activeChat?.messages.length === 0;
                 const currentChatId = activeChatId;
                 const currentProvider = provider;
-                const currentProviderName = providerName;
 
                 setInput(''); 
                 setAttachments([]);
@@ -1247,10 +1291,10 @@ try {
                                 ) : activeChat?.messages.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center mt-20 animate-slide-up">
                                         {safeMode ? (
-                                            <div className="text-center opacity-30 mt-32">
+                                             <div className="text-center opacity-30 mt-32">
                                                  <Icon name="pen-tool" className="w-16 h-16 mx-auto mb-4" />
                                                  <p>Начни печатать, чтобы создать заметку...</p>
-                                            </div>
+                                             </div>
                                         ) : (
                                             <>
                                                 <h1 className="text-5xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] mb-4 text-center">{t.greeting}, {nickname || t.guest}</h1>
