@@ -110,7 +110,7 @@
 
         // ИСПРАВЛЕНО: базовый URL API. Используем абсолютный адрес OpenRouter.
         // Если у вас есть свой прокси, замените на "/api".
-        const API_BASE = "https://openrouter.ai/api";
+        const API_BASE = "https://not0ai.xalithh.workers.dev/api";
 
         const safeStorage = {
             getItem: (key) => { try { return localStorage.getItem(key); } catch (e) { console.warn("Storage blocked:", e); return null; } },
