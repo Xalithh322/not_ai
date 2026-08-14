@@ -11,11 +11,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.453.0/dist/umd/lucide.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.umd.min.js"></script>
-    <!-- ИСПРАВЛЕНО: добавлен DOMPurify для защиты от XSS -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.11/dist/purify.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <!-- ИСПРАВЛЕНО: подключён auto-render KaTeX для рендера формул -->
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
     <style>
@@ -24,113 +22,58 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
 
         :root {
-            --bg-body: #131314;
-            --bg-sidebar: #1e1f20;
-            --bg-surface: #1e1f20;
-            --bg-input: #1e1f20;
-            --bg-user-msg: #282a2c;
-            --text-primary: #e3e3e3;
-            --text-secondary: #c4c7c5;
-            --accent-blue: #a8c7fa;
-            --accent-button-bg: #e3e3e3;
-            --accent-button-text: #1f1f1f;
-            --border-color: #444746;
-            --hover-bg: #333537;
-            --tool-menu-bg: #28292a;
-            --btn-plus-bg: #282a2c;
-            --active-chat-bg: #6e6f70;
-            --active-chat-text: #fafbfc;
-            --safe-btn: #000000;
-            --cost-bg: rgba(255, 255, 255, 0.08);
+            --bg-body: #131314; --bg-sidebar: #1e1f20; --bg-surface: #1e1f20; --bg-input: #1e1f20;
+            --bg-user-msg: #282a2c; --text-primary: #e3e3e3; --text-secondary: #c4c7c5;
+            --accent-blue: #a8c7fa; --border-color: #444746; --hover-bg: #333537;
+            --tool-menu-bg: #28292a; --active-chat-bg: #6e6f70; --active-chat-text: #fafbfc;
+            --safe-btn: #000000; --cost-bg: rgba(255,255,255,0.08); --search-bg: rgba(255,255,255,0.04);
         }
-
         [data-theme="light"] {
-            --bg-body: #ffffff;
-            --bg-sidebar: #f0f4f9;
-            --bg-surface: #ffffff;
-            --bg-input: #f0f4f9;
-            --bg-user-msg: #e9eef6;
-            --text-primary: #1f1f1f;
-            --text-secondary: #444746;
-            --accent-blue: #0b57d0;
-            --accent-button-bg: #0b57d0;
-            --accent-button-text: #ffffff;
-            --border-color: #e0e3e7;
-            --hover-bg: #e9eef6;
-            --tool-menu-bg: #f0f4f9;
-            --btn-plus-bg: #e9eef6;
-            --active-chat-bg: #e8e8e8;
-            --active-chat-text: #0a0a0a;
-            --safe-btn: #e5e5e5;
-            --cost-bg: rgba(0, 0, 0, 0.06);
+            --bg-body: #ffffff; --bg-sidebar: #f0f4f9; --bg-surface: #ffffff; --bg-input: #f0f4f9;
+            --bg-user-msg: #e9eef6; --text-primary: #1f1f1f; --text-secondary: #444746;
+            --accent-blue: #0b57d0; --border-color: #e0e3e7; --hover-bg: #e9eef6;
+            --tool-menu-bg: #f0f4f9; --active-chat-bg: #e8e8e8; --active-chat-text: #0a0a0a;
+            --safe-btn: #e5e5e5; --cost-bg: rgba(0,0,0,0.06); --search-bg: rgba(0,0,0,0.03);
         }
-
-        body {
-            background-color: var(--bg-body);
-            color: var(--text-primary);
-            font-family: 'Google Sans', 'Roboto', sans-serif;
-            overflow: hidden;
-            transition: background-color 0.3s;
-        }
-
+        body { background-color: var(--bg-body); color: var(--text-primary); font-family: 'Google Sans','Roboto',sans-serif; overflow: hidden; transition: background-color .3s; }
         .markdown-body p { margin-bottom: 1rem; line-height: 1.6; color: var(--text-primary); }
-        .markdown-body pre {
-            background-color: var(--bg-sidebar);
-            padding: 1rem;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 1rem 0;
-            border: 1px solid var(--border-color);
-        }
-        .markdown-body code {
-            font-family: 'Roboto Mono', monospace;
-            background-color: rgba(128,128,128,0.15);
-            padding: 0.2em 0.4em;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }
+        .markdown-body pre { background-color: var(--bg-sidebar); padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; border: 1px solid var(--border-color); }
+        .markdown-body code { font-family: 'Roboto Mono',monospace; background-color: rgba(128,128,128,.15); padding: .2em .4em; border-radius: 4px; font-size: .9em; }
         .markdown-body pre code { background: none; padding: 0; }
-
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
-
+        .markdown-body a { color: var(--accent-blue); text-decoration: underline; }
+        .markdown-body ul, .markdown-body ol { margin: .5rem 0 1rem 1.25rem; list-style: revert; }
+        @keyframes slideUp { from { opacity:0; transform: translateY(10px);} to {opacity:1; transform:translateY(0);} }
+        .animate-slide-up { animation: slideUp .3s ease-out forwards; }
+        @keyframes pulseDot { 0%,100%{opacity:.35} 50%{opacity:1} }
+        .pulse-dot { animation: pulseDot 1.2s ease-in-out infinite; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: #444746; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #5e5e5e; }
         .scrollbar-slim::-webkit-scrollbar { width: 4px; }
+        .scrollbar-hide::-webkit-scrollbar { width: 6px; }
     </style>
+
 <!-- Автоматический перенос данных со старого домена -->
 <script>
   (function autoMigrate() {
     if (localStorage.getItem('gemini_auto_migrated')) return;
-
     const iframe = document.createElement('iframe');
     iframe.src = 'https://not0ai.xalithh.workers.dev/migration-bridge';
     iframe.style.display = 'none';
-
     window.addEventListener('message', async (e) => {
       if (e.data && e.data.type === 'NOT_AI_MIGRATION_DATA') {
-        const backup = e.data;
-        let updated = false;
-
+        const backup = e.data; let updated = false;
         if (backup.localStorage) {
           Object.keys(backup.localStorage).forEach(k => {
-            if (!localStorage.getItem(k)) {
-              localStorage.setItem(k, backup.localStorage[k]);
-              updated = true;
-            }
+            if (!localStorage.getItem(k)) { localStorage.setItem(k, backup.localStorage[k]); updated = true; }
           });
         }
-
         if (backup.chats && Array.isArray(backup.chats) && backup.chats.length > 0) {
           try {
             await new Promise((resolve) => {
               const req = indexedDB.open('GeminiChatDB', 1);
               req.onupgradeneeded = (evt) => {
                 const db = evt.target.result;
-                if (!db.objectStoreNames.contains('chats')) {
-                  db.createObjectStore('chats', { keyPath: 'id' });
-                }
+                if (!db.objectStoreNames.contains('chats')) db.createObjectStore('chats', { keyPath: 'id' });
               };
               req.onsuccess = (evt) => {
                 const db = evt.target.result;
@@ -142,14 +85,10 @@
             updated = true;
           } catch(err) { console.error(err); }
         }
-
         localStorage.setItem('gemini_auto_migrated', 'true');
-        if (updated) {
-          window.location.reload();
-        }
+        if (updated) window.location.reload();
       }
     });
-
     document.head.appendChild(iframe);
   })();
 </script>
@@ -160,16 +99,57 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo, Component } = React;
 
-        const APP_VERSION = "v3.5.2";
-
-        // ИСПРАВЛЕНО: базовый URL API. Используем абсолютный адрес OpenRouter.
-        // Если у вас есть свой прокси, замените на "/api".
+        const APP_VERSION = "v4.0.0";
         const API_BASE = "/api";
+        const MAX_SEARCHES = 2;
+        const SEARCH_MODEL = "perplexity/sonar";
+
+        /* ---------- дефолтные модели (fallback, если /api/models недоступен) ---------- */
+        const DEFAULT_MODELS = [
+            { id:'google/gemini-3.7-flash', name:'Gemini 3.7 Flash', description:'Быстрая универсальная модель нового поколения', icon:'gemini', vision:true, free:false, supportsTools:true, maxTokens:8192, provider:null, reasoning:null, reasoningOptions:[] },
+            { id:'openai/gpt-5.6-luna', name:'GPT-5.6 Luna', description:'Логика, код и точные вычисления. Настраиваемое рассуждение.', icon:'chatgpt', vision:true, free:false, supportsTools:true, maxTokens:32000, provider:null, reasoning:{ effort:'medium' }, reasoningOptions:['medium','high'] },
+            { id:'deepseek/deepseek-v4-flash-latest', name:'DeepSeek V4 Flash', description:'Баланс скорости и интеллекта. Только провайдер Decart.', icon:'deepseek', vision:false, free:false, supportsTools:true, maxTokens:16000, provider:{ order:['decart'], allow_fallbacks:false }, reasoning:null, reasoningOptions:[] },
+            { id:'google/gemma-4-26b-a4b-it:free', name:'Gemma 4 26B', description:'Бесплатная лёгкая и сообразительная модель от Google', icon:'gemma', vision:true, free:true, supportsTools:false, maxTokens:8000, provider:null, reasoning:null, reasoningOptions:[] }
+        ];
+
+        const SEARCH_TOOL = {
+            type: "function",
+            function: {
+                name: "web_search",
+                description: "Поиск актуальной информации в интернете (Perplexity Sonar). Используй для свежих новостей, цен, курсов, расписаний, дат, статистики и любых фактов, которые могли измениться после обучения. Максимум 2 вызова на один ответ.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        query: { type: "string", description: "Короткий поисковый запрос (1-8 слов) на языке источника" }
+                    },
+                    required: ["query"]
+                }
+            }
+        };
+
+        const normalizeModel = (m) => {
+            const id = String(m.id || '').trim();
+            const effort = m.reasoning && typeof m.reasoning === 'object' ? String(m.reasoning.effort || '') : '';
+            return {
+                id,
+                name: String(m.name || id),
+                description: String(m.description || ''),
+                icon: String(m.icon || 'gemini'),
+                vision: m.vision !== false,
+                free: !!m.free,
+                supportsTools: m.supportsTools !== false,
+                maxTokens: Number(m.maxTokens) > 0 ? Number(m.maxTokens) : 8192,
+                provider: (m.provider && typeof m.provider === 'object' && Array.isArray(m.provider.order) && m.provider.order.length)
+                    ? { order: m.provider.order.map(String), allow_fallbacks: m.provider.allow_fallbacks !== false } : null,
+                reasoning: effort ? { effort } : null,
+                reasoningOptions: Array.isArray(m.reasoningOptions) ? m.reasoningOptions.map(String) : []
+            };
+        };
 
         const safeStorage = {
-            getItem: (key) => { try { return localStorage.getItem(key); } catch (e) { console.warn("Storage blocked:", e); return null; } },
-            setItem: (key, value) => { try { localStorage.setItem(key, value); } catch (e) { console.warn("Storage blocked:", e); } },
-            removeItem: (key) => { try { localStorage.removeItem(key); } catch (e) { console.warn("Storage blocked:", e); } }
+            getItem: (k) => { try { return localStorage.getItem(k); } catch(e){ return null; } },
+            setItem: (k,v) => { try { localStorage.setItem(k,v); } catch(e){} },
+            removeItem: (k) => { try { localStorage.removeItem(k); } catch(e){} }
         };
 
         const Icon = ({ name, className }) => {
@@ -180,7 +160,7 @@
                     if (!active) return;
                     if (spanRef.current && window.lucide) {
                         spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className || ''}"></i>`;
-                        try { window.lucide.createIcons({ root: spanRef.current }); } catch (e) { console.error("Lucide error:", e); }
+                        try { window.lucide.createIcons({ root: spanRef.current }); } catch (e) {}
                     }
                 };
                 tryInit();
@@ -193,52 +173,48 @@
             return <span ref={spanRef} className="inline-flex items-center justify-center flex-shrink-0 leading-none" />;
         };
 
-        const GeminiIcon = ({ className, active = true }) => (
-            <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="Gemini" draggable="false" />
+        /* ---------- иконки ---------- */
+        const imgIcon = (src) => ({ className, active = true }) => (
+            <img src={src} className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="" draggable="false" />
         );
-
+        const GeminiIcon = imgIcon("https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg");
+        const DeepSeekIcon = imgIcon("https://i.ibb.co/vCC9PQ7S/image.png");
+        const FreeOptionIcon = imgIcon("https://i.ibb.co/3Yv1xq1K/image.png");
+        const GemmaIcon = imgIcon("https://i.ibb.co/G4Zdnf7Y/image.png");
+        const MetaIcon = imgIcon("https://i.ibb.co/Q7fB6grM/image.png");
+        const PerplexityIcon = imgIcon("https://i.ibb.co/3Yv1xq1K/image.png");
+        const RouterIcon = ({ className, active = true, theme }) => (
+            <img src={theme === 'light' ? 'https://i.ibb.co/23g12YV6/image.png' : 'https://i.ibb.co/kssPJfdp/image.png'}
+                 className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="" draggable="false" />
+        );
         const ChatGPTIcon = ({ className, active = true }) => (
             <svg viewBox="0 0 24 24" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40 text-gray-400' : 'text-[#10a37f]'}`} xmlns="http://www.w3.org/2000/svg" fill="currentColor">
                 <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.073zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.5 2.6002 1.5v3.0043l-2.5998 1.5-2.6024-1.5z" />
             </svg>
         );
 
-        const DeepSeekIcon = ({ className, active = true }) => (
-            <img src="https://i.ibb.co/vCC9PQ7S/image.png" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="DeepSeek" draggable="false" />
-        );
-        const FreeOptionIcon = ({ className, active = true }) => (
-            <img src="https://i.ibb.co/3Yv1xq1K/image.png" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="Free" draggable="false" />
-        );
-        const RouterIcon = ({ className, active = true, theme }) => (
-            <img src={theme === 'light' ? 'https://i.ibb.co/23g12YV6/image.png' : 'https://i.ibb.co/kssPJfdp/image.png'} className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="Router" draggable="false" />
-        );
-        const GemmaIcon = ({ className, active = true }) => (
-            <img src="https://i.ibb.co/G4Zdnf7Y/image.png" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="Gemma" draggable="false" />
-        );
-        const MetaIcon = ({ className, active = true }) => (
-            <img src="https://i.ibb.co/Q7fB6grM/image.png" className={`${className} transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="Meta" draggable="false" />
-        );
-
-        const ProviderIcon = ({ provider, className, active = true, theme }) => {
-            if (provider === 'chatgpt') return <ChatGPTIcon className={className} active={active} />;
-            if (provider === 'deepseek') return <DeepSeekIcon className={className} active={active} />;
-            if (provider === 'free') return <FreeOptionIcon className={className} active={active} />;
-            if (provider === 'router') return <RouterIcon className={className} active={active} theme={theme} />;
-            if (provider === 'gemma') return <GemmaIcon className={className} active={active} />;
-            if (provider === 'meta') return <MetaIcon className={className} active={active} />;
-            return <GeminiIcon className={className} active={active} />;
+        const ModelIcon = ({ icon, className, active = true, theme }) => {
+            if (icon && /^https?:\/\//i.test(icon)) return <img src={icon} className={`${className} rounded-sm transition-all duration-300 ${!active ? 'grayscale opacity-40' : ''}`} alt="" draggable="false" />;
+            switch (icon) {
+                case 'chatgpt': return <ChatGPTIcon className={className} active={active} />;
+                case 'deepseek': return <DeepSeekIcon className={className} active={active} />;
+                case 'gemma': return <GemmaIcon className={className} active={active} />;
+                case 'meta': return <MetaIcon className={className} active={active} />;
+                case 'free': return <FreeOptionIcon className={className} active={active} />;
+                case 'perplexity': return <PerplexityIcon className={className} active={active} />;
+                case 'router': return <RouterIcon className={className} active={active} theme={theme} />;
+                default: return <GeminiIcon className={className} active={active} />;
+            }
         };
 
-        const DB_NAME = 'GeminiChatDB';
-        const STORE_NAME = 'chats';
-        const DB_VERSION = 1;
-
+        /* ---------- IndexedDB ---------- */
+        const DB_NAME = 'GeminiChatDB', STORE_NAME = 'chats', DB_VERSION = 1;
         const db = {
             open: () => new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
                 request.onupgradeneeded = (e) => {
-                    const dbInstance = e.target.result;
-                    if (!dbInstance.objectStoreNames.contains(STORE_NAME)) dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    const inst = e.target.result;
+                    if (!inst.objectStoreNames.contains(STORE_NAME)) inst.createObjectStore(STORE_NAME, { keyPath: 'id' });
                 };
                 request.onsuccess = (e) => resolve(e.target.result);
                 request.onerror = (e) => reject(e.target.error);
@@ -275,79 +251,72 @@
         class ErrorBoundary extends Component {
             constructor(props) { super(props); this.state = { hasError: false, error: null }; }
             static getDerivedStateFromError(error) { return { hasError: true, error }; }
-            componentDidCatch(error, errorInfo) { console.error("React Error:", error, errorInfo); }
+            componentDidCatch(e, i) { console.error("React Error:", e, i); }
             render() {
-                if (this.state.hasError) {
-                    return (
-                        <div className="flex items-center justify-center h-screen flex-col text-red-400 p-4 text-center bg-[#131314]">
-                            <h2 className="text-2xl font-bold mb-2">Ошибка приложения</h2>
-                            <p className="text-sm opacity-80 mb-4">{String(this.state.error)}</p>
-                            <button onClick={() => { safeStorage.removeItem('gemini_language'); window.location.reload(); }} className="px-4 py-2 bg-[var(--accent-blue)] text-black rounded-full mt-4 font-semibold">Сбросить настройки и перезагрузить</button>
-                        </div>
-                    );
-                }
+                if (this.state.hasError) return (
+                    <div className="flex items-center justify-center h-screen flex-col text-red-400 p-4 text-center bg-[#131314]">
+                        <h2 className="text-2xl font-bold mb-2">Ошибка приложения</h2>
+                        <p className="text-sm opacity-80 mb-4">{String(this.state.error)}</p>
+                        <button onClick={() => { safeStorage.removeItem('gemini_language'); window.location.reload(); }} className="px-4 py-2 bg-[var(--accent-blue)] text-black rounded-full mt-4 font-semibold">Сбросить и перезагрузить</button>
+                    </div>
+                );
                 return this.props.children;
             }
         }
 
+        /* ---------- i18n ---------- */
         const translations = {
             ru: {
-                newChat: 'Новый чат', newChatSafe: 'Новая заметка', recent: 'Недавние', settings: 'Настройки',
-                officialSite: 'Официальный сайт OpenRouter', greeting: 'Привет', helpPrompt: 'Как я могу помочь тебе сегодня?',
-                guest: 'Гость', thinking: 'Думаю...', send: 'Отправить', stop: 'Остановить генерацию',
-                inputPlaceholder: 'Напиши свой запрос...', yourName: 'Твое имя', tabTitleSetting: 'Название вкладки',
-                tabTitlePlaceholder: 'not ai', theme: 'Тема', language: 'Язык', apiKey: 'OpenRouter API Key',
-                close: 'Закрыть', cancel: 'Отмена', save: 'Сохранить', welcome: 'Добро пожаловать!',
-                askName: 'Как мне к тебе обращаться?', namePlaceholder: 'Введи свое имя', startChat: 'Начать общение',
-                modelFlash: 'Быстрая модель нового поколения', modelPro: 'Самая мощная модель для сложных задач',
-                chatgptFlash: 'Универсальная модель для повседневных дел',
-                chatgptPro: 'Логичный, для точных вычислений (Гораздо умнее 5.4 mini, но долго отвечает)',
-                deepseekChatDesc: 'Оптимальный баланс скорости и интеллекта', deepseekR1Desc: 'Глубокое мышление для сложных задач',
-                freeModelsLabel: 'Дешевые модели', freeAutoLabel: 'OpenRouter Auto',
-                freeAutoDesc: 'Автоматический поиск лучшей бесплатной нейросети',
-                freeGemmaDesc: 'Легкая и сообразительная модель от Google',
-                freeLlamaDesc: 'Надежная база для текстов любой сложности + Легкие задания по математике.',
-                connected: 'Сервер: Подключен', emptyResponse: 'Пустой ответ от сервера', requestError: 'Ошибка запроса',
-                errorPrefix: 'Ошибка: ', systemInstructions: 'Системные инструкции',
-                sysInstDescription: 'Укажи, как модель должна себя вести (например: "Ты опытный программист...").',
-                sysInstPlaceholder: 'Напиши инструкции здесь...', balanceLabel: 'Баланс:', clearHistory: 'Очистить историю',
-                provider: 'Провайдер ИИ', reqStopped: '⚠️ Запрос был остановлен.', costLabel: 'Стоимость:',
-                descGemini: 'Универсальные модели от Google. Быстрые, с большим контекстом.',
-                descChatGPT: 'Мощные модели OpenAI. Отлично справляются с логикой и кодом.',
-                descDeepSeek: 'Продвинутые модели. Включает R1 — модель с глубоким рассуждением.',
-                descFree: 'Доступ к бюджетным моделям с низким расходом баланса API ключа.',
-                settingsAI: 'ИИ и поведение', settingsAppearance: 'Внешний вид', settingsData: 'Данные аккаунта',
-                attachPhoto: 'Прикрепить фото', noApiKey: '⚠️ Не указан API ключ. Откройте настройки и введите ключ OpenRouter.',
-                webSearch: 'Веб-поиск'
+                newChat:'Новый чат', newChatSafe:'Новая заметка', recent:'Недавние', settings:'Настройки',
+                officialSite:'Официальный сайт OpenRouter', greeting:'Привет', helpPrompt:'Как я могу помочь тебе сегодня?',
+                guest:'Гость', send:'Отправить', stop:'Остановить генерацию', inputPlaceholder:'Напиши свой запрос...',
+                yourName:'Твое имя', tabTitleSetting:'Название вкладки', tabTitlePlaceholder:'not ai', theme:'Тема',
+                language:'Язык', apiKey:'OpenRouter API Key', cancel:'Отмена', save:'Сохранить', close:'Закрыть',
+                welcome:'Добро пожаловать!', askName:'Как мне к тебе обращаться?', namePlaceholder:'Введи свое имя',
+                startChat:'Начать общение', emptyResponse:'Пустой ответ от сервера', requestError:'Ошибка запроса',
+                errorPrefix:'Ошибка: ', systemInstructions:'Системные инструкции',
+                sysInstDescription:'Укажи, как модель должна себя вести (например: "Ты опытный программист...").',
+                sysInstPlaceholder:'Напиши инструкции здесь...', balanceLabel:'Баланс:', clearHistory:'Очистить историю',
+                reqStopped:'⚠️ Запрос был остановлен.', settingsAI:'ИИ и поведение', settingsAppearance:'Внешний вид',
+                settingsData:'Данные аккаунта', attachPhoto:'Прикрепить фото',
+                noApiKey:'⚠️ Не указан API ключ. Откройте настройки и введите ключ OpenRouter.',
+                webSearch:'Веб-поиск', webSearchHint:'Модель сама решает, когда искать (Perplexity Sonar, до 2 запросов)',
+                searchingWeb:'Ищу в интернете', searchedWeb:'Веб-поиск', sources:'Источники',
+                searchLimitNote:'Достигнут лимит поисковых запросов (2).', searchError:'Ошибка поиска',
+                modelsLabel:'Модель', effort:'Глубина рассуждения', effortMedium:'Средняя', effortHigh:'Высокая',
+                copyText:'Скопировать текст', copied:'Скопировано', viewReasoning:'Посмотреть размышление',
+                viewCost:'Посмотреть стоимость', reasoningTitle:'Размышление модели', noReasoning:'Модель не вернула reasoning-токены.',
+                searchLog:'Лог поисковых вызовов', noSearches:'Поиск не использовался.',
+                costTitle:'Стоимость ответа', costMain:'Основной ответ', costSearch:'Веб-поиск', costTotal:'Итого',
+                costShare:'Доля от остатка баланса', balanceLeft:'Остаток баланса', costPending:'Стоимость уточняется...',
+                visionUnsupported:'⚠️ **Ошибка:** выбранная модель не поддерживает изображения. Отправьте только текст или выберите другую модель.',
+                free:'Бесплатно', noTools:'Без поиска', modelsSynced:'Список моделей обновлён'
             },
             da: {
-                newChat: 'Ny chat', newChatSafe: 'Ny note', recent: 'Seneste', settings: 'Indstillinger',
-                officialSite: 'Officiel OpenRouter webside', greeting: 'Hej', helpPrompt: 'Hvordan kan jeg hjælpe dig i dag?',
-                guest: 'Gæst', thinking: 'Tænker...', send: 'Send', stop: 'Stop generering',
-                inputPlaceholder: 'Indtast din besked...', yourName: 'Dit navn', tabTitleSetting: 'Fanebladstitel',
-                tabTitlePlaceholder: 'not ai', theme: 'Tema', language: 'Sprog', apiKey: 'OpenRouter API Key',
-                close: 'Luk', cancel: 'Annuller', save: 'Gem', welcome: 'Velkommen!',
-                askName: 'Hvad skal jeg kalde dig?', namePlaceholder: 'Indtast dit navn', startChat: 'Start chat',
-                modelFlash: 'Hurtig næste-generations model', modelPro: 'Mest kraftfulde model til komplekse opgaver',
-                chatgptFlash: 'Alsidig model til hverdagsopgaver',
-                chatgptPro: 'Logisk, til præcise beregninger (Meget klogere end 5.4 mini, men langsommere)',
-                deepseekChatDesc: 'Optimal balance mellem hastighed og intelligens', deepseekR1Desc: 'Dyb tænkning til komplekse opgaver',
-                freeModelsLabel: 'Billige modeller', freeAutoLabel: 'OpenRouter Auto',
-                freeAutoDesc: 'Automatisk søgning efter den bedste gratis model',
-                freeGemmaDesc: 'Let og kvik model fra Google',
-                freeLlamaDesc: 'Pålidelig base for tekster af enhver sværhedsgrad + nem matematik.',
-                connected: 'Server: Forbundet', emptyResponse: 'Tomt svar fra serveren', requestError: 'Anmodningsfejl',
-                errorPrefix: 'Fejl: ', systemInstructions: 'Systeminstruktioner',
-                sysInstDescription: 'Angiv, hvordan modellen skal opføre sig (f.eks.: "Du er en erfaren programmør...").',
-                sysInstPlaceholder: 'Skriv instruktioner her...', balanceLabel: 'Saldo:', clearHistory: 'Ryd historik',
-                provider: 'AI Udbyder', reqStopped: '⚠️ Anmodningen blev stoppet.', costLabel: 'Pris:',
-                descGemini: 'Alsidige modeller fra Google. Hurtige med stort kontekstvindue.',
-                descChatGPT: 'Kraftfulde OpenAI modeller. Fremragende til logik og kode.',
-                descDeepSeek: 'Avancerede modeller. Inkluderer R1 – en model med dyb tænkning.',
-                descFree: 'Adgang til budgetvenlige modeller med lavt API-forbrug.',
-                settingsAI: 'AI & Adfærd', settingsAppearance: 'Udseende', settingsData: 'Kontodata',
-                attachPhoto: 'Vedhæft billede', noApiKey: '⚠️ Ingen API-nøgle. Åbn indstillinger og indtast din OpenRouter-nøgle.',
-                webSearch: 'Websøgning'
+                newChat:'Ny chat', newChatSafe:'Ny note', recent:'Seneste', settings:'Indstillinger',
+                officialSite:'Officiel OpenRouter webside', greeting:'Hej', helpPrompt:'Hvordan kan jeg hjælpe dig i dag?',
+                guest:'Gæst', send:'Send', stop:'Stop generering', inputPlaceholder:'Indtast din besked...',
+                yourName:'Dit navn', tabTitleSetting:'Fanebladstitel', tabTitlePlaceholder:'not ai', theme:'Tema',
+                language:'Sprog', apiKey:'OpenRouter API Key', cancel:'Annuller', save:'Gem', close:'Luk',
+                welcome:'Velkommen!', askName:'Hvad skal jeg kalde dig?', namePlaceholder:'Indtast dit navn',
+                startChat:'Start chat', emptyResponse:'Tomt svar fra serveren', requestError:'Anmodningsfejl',
+                errorPrefix:'Fejl: ', systemInstructions:'Systeminstruktioner',
+                sysInstDescription:'Angiv, hvordan modellen skal opføre sig (f.eks.: "Du er en erfaren programmør...").',
+                sysInstPlaceholder:'Skriv instruktioner her...', balanceLabel:'Saldo:', clearHistory:'Ryd historik',
+                reqStopped:'⚠️ Anmodningen blev stoppet.', settingsAI:'AI & Adfærd', settingsAppearance:'Udseende',
+                settingsData:'Kontodata', attachPhoto:'Vedhæft billede',
+                noApiKey:'⚠️ Ingen API-nøgle. Åbn indstillinger og indtast din OpenRouter-nøgle.',
+                webSearch:'Websøgning', webSearchHint:'Modellen beslutter selv (Perplexity Sonar, max 2 kald)',
+                searchingWeb:'Søger på nettet', searchedWeb:'Websøgning', sources:'Kilder',
+                searchLimitNote:'Grænsen for søgninger er nået (2).', searchError:'Søgefejl',
+                modelsLabel:'Model', effort:'Tænkedybde', effortMedium:'Mellem', effortHigh:'Høj',
+                copyText:'Kopier tekst', copied:'Kopieret', viewReasoning:'Se tænkning',
+                viewCost:'Se pris', reasoningTitle:'Modellens tænkning', noReasoning:'Modellen returnerede ingen reasoning-tokens.',
+                searchLog:'Log over søgekald', noSearches:'Søgning blev ikke brugt.',
+                costTitle:'Svarets pris', costMain:'Hovedsvar', costSearch:'Websøgning', costTotal:'I alt',
+                costShare:'Andel af resterende saldo', balanceLeft:'Resterende saldo', costPending:'Prisen beregnes...',
+                visionUnsupported:'⚠️ **Fejl:** den valgte model understøtter ikke billeder. Send kun tekst eller vælg en anden model.',
+                free:'Gratis', noTools:'Uden søgning', modelsSynced:'Modellisten er opdateret'
             }
         };
 
@@ -357,68 +326,182 @@
                 if (!containerRef.current) return;
                 if (!content) { containerRef.current.innerHTML = ''; return; }
                 try {
-                    const safeContent = String(content);
-                    let html = marked.parse(safeContent);
-                    const apply = (rawHtml) => {
-                        // ИСПРАВЛЕНО: санитизация через DOMPurify (защита от XSS)
-                        const clean = window.DOMPurify ? window.DOMPurify.sanitize(rawHtml) : rawHtml;
+                    let html = marked.parse(String(content));
+                    const apply = (raw) => {
+                        const clean = window.DOMPurify ? window.DOMPurify.sanitize(raw, { ADD_ATTR: ['target'] }) : raw;
                         containerRef.current.innerHTML = clean;
-                        // ИСПРАВЛЕНО: рендер LaTeX-формул через KaTeX
+                        containerRef.current.querySelectorAll('a').forEach(a => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
                         if (window.renderMathInElement) {
                             try {
                                 window.renderMathInElement(containerRef.current, {
                                     delimiters: [
-                                        { left: '$$', right: '$$', display: true },
-                                        { left: '$', right: '$', display: false },
-                                        { left: '\\(', right: '\\)', display: false },
-                                        { left: '\\[', right: '\\]', display: true }
-                                    ],
-                                    throwOnError: false
+                                        { left:'$$', right:'$$', display:true },
+                                        { left:'$', right:'$', display:false },
+                                        { left:'\\(', right:'\\)', display:false },
+                                        { left:'\\[', right:'\\]', display:true }
+                                    ], throwOnError:false
                                 });
-                            } catch (e) { /* ignore katex errors */ }
+                            } catch(e) {}
                         }
                     };
-                    if (html instanceof Promise) html.then(apply);
-                    else apply(html);
-                } catch {
-                    containerRef.current.innerText = String(content);
-                }
+                    if (html instanceof Promise) html.then(apply); else apply(html);
+                } catch { containerRef.current.innerText = String(content); }
             }, [content]);
             return <div ref={containerRef} className="markdown-body text-[15px] border-none leading-7" />;
         };
 
         const BotIcon = ({ className }) => (
             <svg className={className} viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="10" rx="2" ry="2"/>
-                <circle cx="12" cy="5" r="2"/>
-                <path d="M12 7v4"/>
-                <line x1="8" y1="16" x2="8" y2="16.01"/>
-                <line x1="16" y1="16" x2="16" y2="16.01"/>
+                <rect x="3" y="11" width="18" height="10" rx="2" ry="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/>
+                <line x1="8" y1="16" x2="8" y2="16.01"/><line x1="16" y1="16" x2="16" y2="16.01"/>
             </svg>
         );
 
-        // ИСПРАВЛЕНО: вынесен генератор уникальных ID для сообщений
         let msgCounter = 0;
         const genMsgId = () => `${Date.now()}_${msgCounter++}`;
+        const fmt$ = (v) => `$${Number(v || 0).toFixed(6)}`;
+        const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./,''); } catch { return u; } };
 
+        /* ---------- Плашка веб-поиска (Claude-style) ---------- */
+        const SearchPanel = ({ searches, open, running, onToggle, t }) => {
+            if (!searches || !searches.length) return null;
+            const label = running ? t.searchingWeb : t.searchedWeb;
+            return (
+                <div className="mb-3 rounded-xl border border-[var(--border-color)] bg-[var(--search-bg)] overflow-hidden animate-slide-up">
+                    <button onClick={onToggle} className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-[var(--hover-bg)] transition-colors">
+                        <Icon name="globe" className={`w-4 h-4 text-[var(--accent-blue)] ${running ? 'pulse-dot' : ''}`} />
+                        <span className="text-xs font-medium text-[var(--text-primary)]">{label}</span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--cost-bg)] text-[var(--text-secondary)]">{searches.length}/{MAX_SEARCHES}</span>
+                        {running && <span className="text-[11px] text-[var(--text-secondary)] truncate max-w-[220px]">{searches[searches.length-1].query}</span>}
+                        <Icon name={open ? 'chevron-up' : 'chevron-down'} className="w-3.5 h-3.5 ml-auto text-[var(--text-secondary)]" />
+                    </button>
+                    {open && (
+                        <div className="px-3 pb-3 pt-1 space-y-3 border-t border-[var(--border-color)]">
+                            {searches.map((s) => (
+                                <div key={s.id} className="text-xs">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Icon name={s.status === 'running' ? 'loader' : (s.status === 'error' ? 'alert-triangle' : 'search')}
+                                              className={`w-3.5 h-3.5 ${s.status === 'running' ? 'text-[var(--accent-blue)] pulse-dot' : (s.status === 'error' ? 'text-red-400' : 'text-[var(--text-secondary)]')}`} />
+                                        <span className="font-medium text-[var(--text-primary)] break-words">{s.query || '—'}</span>
+                                    </div>
+                                    {s.status === 'error' && <div className="text-red-400 pl-5">{t.searchError}: {s.error}</div>}
+                                    {s.summary && <div className="pl-5 text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto scrollbar-slim">{s.summary}</div>}
+                                    {s.citations && s.citations.length > 0 && (
+                                        <div className="pl-5 mt-1.5 flex flex-wrap gap-1.5">
+                                            {s.citations.slice(0, 8).map((c, i) => (
+                                                <a key={i} href={c} target="_blank" rel="noopener noreferrer"
+                                                   className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--cost-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--accent-blue)] transition-colors">
+                                                    {i+1}. {hostOf(c)}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        /* ---------- Меню ответа (три точки) ---------- */
+        const MessageActions = ({ msg, t, onReasoning, onCost }) => {
+            const [open, setOpen] = useState(false);
+            const [copied, setCopied] = useState(false);
+            const ref = useRef(null);
+            useEffect(() => {
+                if (!open) return;
+                const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+                document.addEventListener('mousedown', h);
+                return () => document.removeEventListener('mousedown', h);
+            }, [open]);
+
+            const copy = async () => {
+                const text = msg.text || '';
+                try { await navigator.clipboard.writeText(text); }
+                catch {
+                    const ta = document.createElement('textarea');
+                    ta.value = text; document.body.appendChild(ta); ta.select();
+                    try { document.execCommand('copy'); } catch(e) {}
+                    ta.remove();
+                }
+                setCopied(true); setOpen(false);
+                setTimeout(() => setCopied(false), 1600);
+            };
+
+            const total = (msg.cost || 0) + (msg.searchCost || 0);
+
+            return (
+                <div className="mt-2 flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                    {total > 0 && (
+                        <button onClick={onCost} className="flex items-center gap-1.5 bg-[var(--cost-bg)] border border-[var(--border-color)] px-2 py-0.5 rounded-full hover:border-[var(--accent-blue)] transition-colors" title={t.viewCost}>
+                            <Icon name="credit-card" className="w-3 h-3 text-[var(--text-secondary)]" />
+                            <span className="text-[10px] font-mono text-[var(--text-secondary)] leading-none">{fmt$(total)}</span>
+                        </button>
+                    )}
+                    <div className="relative" ref={ref}>
+                        <button onClick={() => setOpen(!open)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] transition-colors" title="•••">
+                            <Icon name="more-horizontal" className="w-4 h-4" />
+                        </button>
+                        {open && (
+                            <div className="absolute left-0 bottom-full mb-2 w-60 bg-[var(--tool-menu-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl p-1.5 z-40 animate-slide-up">
+                                <button onClick={copy} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-[var(--text-primary)] hover:bg-[var(--hover-bg)] transition-colors">
+                                    <Icon name="copy" className="w-4 h-4 text-[var(--text-secondary)]" />{t.copyText}
+                                </button>
+                                <button onClick={() => { setOpen(false); onReasoning(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-[var(--text-primary)] hover:bg-[var(--hover-bg)] transition-colors">
+                                    <Icon name="brain" className="w-4 h-4 text-[var(--text-secondary)]" />{t.viewReasoning}
+                                </button>
+                                <button onClick={() => { setOpen(false); onCost(); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-sm text-[var(--text-primary)] hover:bg-[var(--hover-bg)] transition-colors">
+                                    <Icon name="wallet" className="w-4 h-4 text-[var(--text-secondary)]" />{t.viewCost}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    {copied && <span className="text-[10px] text-[var(--accent-blue)]">{t.copied}</span>}
+                </div>
+            );
+        };
+
+        const Modal = ({ title, onClose, children, footer }) => (
+            <div className="fixed inset-0 bg-black/60 z-[120] flex items-center justify-center p-4" onClick={onClose}>
+                <div className="bg-[var(--bg-surface)] rounded-2xl w-full max-w-2xl border border-[var(--border-color)] shadow-2xl flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+                    <div className="p-5 border-b border-[var(--border-color)] flex justify-between items-center">
+                        <h2 className="text-lg font-bold">{title}</h2>
+                        <button onClick={onClose} className="p-1 rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)]"><Icon name="x" className="w-5 h-5" /></button>
+                    </div>
+                    <div className="p-5 overflow-y-auto scrollbar-slim">{children}</div>
+                    {footer && <div className="p-5 border-t border-[var(--border-color)] flex justify-end gap-3">{footer}</div>}
+                </div>
+            </div>
+        );
+
+        /* ================== APP ================== */
         const App = () => {
-            const DEFAULT_KEY = "";
-
-            const [apiKey, setApiKey] = useState(safeStorage.getItem('gemini_user_api_key') || DEFAULT_KEY);
+            const [apiKey, setApiKey] = useState(safeStorage.getItem('gemini_user_api_key') || '');
             const [theme, setTheme] = useState(safeStorage.getItem('gemini_theme') || 'dark');
             const [language, setLanguage] = useState(safeStorage.getItem('gemini_language') || 'ru');
             const [nickname, setNickname] = useState(safeStorage.getItem('gemini_nickname') || '');
             const [tabTitle, setTabTitle] = useState(safeStorage.getItem('gemini_tab_title') || 'not ai');
             const [systemInstruction, setSystemInstruction] = useState(safeStorage.getItem('gemini_system_instruction') || '');
             const [safeMode, setSafeMode] = useState(false);
-            const [provider, setProvider] = useState(safeStorage.getItem('app_provider') || 'gemini');
             const [balanceData, setBalanceData] = useState(null);
-            // ИСПРАВЛЕНО: веб-поиск теперь переключаемый, а не принудительный
+
+            /* модели из KV */
+            const [models, setModels] = useState(() => {
+                try {
+                    const cached = JSON.parse(safeStorage.getItem('models_cache_v1') || 'null');
+                    if (Array.isArray(cached) && cached.length) return cached.map(normalizeModel);
+                } catch(e) {}
+                return DEFAULT_MODELS;
+            });
+            const [modelId, setModelId] = useState(safeStorage.getItem('app_model_id') || DEFAULT_MODELS[0].id);
+            const [reasoningEffort, setReasoningEffort] = useState(safeStorage.getItem('app_reasoning_effort') || 'medium');
+            const [webSearch, setWebSearch] = useState(safeStorage.getItem('app_web_search') !== '0');
+            const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
 
             const [chats, setChats] = useState([]);
             const [isChatsLoaded, setIsChatsLoaded] = useState(false);
             const [loadError, setLoadError] = useState(false);
-
             const [activeChatId, setActiveChatId] = useState(null);
             const [input, setInput] = useState('');
             const [attachments, setAttachments] = useState([]);
@@ -429,9 +512,8 @@
             const [isSettingsOpen, setIsSettingsOpen] = useState(false);
             const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
             const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
-
-            const [modelType, setModelType] = useState('flash');
-            const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
+            const [reasoningModalMsg, setReasoningModalMsg] = useState(null);
+            const [costModalMsg, setCostModalMsg] = useState(null);
 
             const [tempTheme, setTempTheme] = useState(theme);
             const [tempLanguage, setTempLanguage] = useState(language);
@@ -439,107 +521,119 @@
             const [tempTabTitle, setTempTabTitle] = useState(tabTitle);
             const [tempApiKey, setTempApiKey] = useState(apiKey);
             const [tempSystemInstruction, setTempSystemInstruction] = useState('');
-            const [tempProvider, setTempProvider] = useState(provider);
 
             const textareaRef = useRef(null);
             const abortControllerRef = useRef(null);
             const chatContainerRef = useRef(null);
             const isUserScrolledUp = useRef(false);
             const lastScrollTopRef = useRef(0);
-            // ИСПРАВЛЕНО: ref для актуального apiKey внутри асинхронных колбэков
             const apiKeyRef = useRef(apiKey);
             useEffect(() => { apiKeyRef.current = apiKey; }, [apiKey]);
 
             const activeLang = translations[language] ? language : 'ru';
             const t = translations[activeLang];
 
+            const currentModel = useMemo(
+                () => models.find(m => m.id === modelId) || models[0] || DEFAULT_MODELS[0],
+                [models, modelId]
+            );
+            const effectiveEffort = useMemo(() => {
+                if (!currentModel.reasoning) return null;
+                const opts = currentModel.reasoningOptions || [];
+                if (opts.length) return opts.includes(reasoningEffort) ? reasoningEffort : opts[0];
+                return currentModel.reasoning.effort;
+            }, [currentModel, reasoningEffort]);
+
+            /* ---- синхронизация списка моделей ---- */
+            useEffect(() => {
+                let cancelled = false;
+                (async () => {
+                    try {
+                        const res = await fetch(`${API_BASE}/models`, { cache: 'no-store' });
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        const list = Array.isArray(data) ? data : (data && data.models);
+                        if (!Array.isArray(list) || !list.length || cancelled) return;
+                        const norm = list.map(normalizeModel).filter(m => m.id);
+                        setModels(norm);
+                        safeStorage.setItem('models_cache_v1', JSON.stringify(norm));
+                    } catch (e) { console.warn('Models sync failed:', e); }
+                })();
+                return () => { cancelled = true; };
+            }, []);
+
+            useEffect(() => {
+                if (models.length && !models.some(m => m.id === modelId)) setModelId(models[0].id);
+            }, [models]);
+
+            useEffect(() => { safeStorage.setItem('app_model_id', modelId); }, [modelId]);
+            useEffect(() => { safeStorage.setItem('app_reasoning_effort', reasoningEffort); }, [reasoningEffort]);
+            useEffect(() => { safeStorage.setItem('app_web_search', webSearch ? '1' : '0'); }, [webSearch]);
+
             useEffect(() => {
                 document.documentElement.setAttribute('data-theme', theme);
                 safeStorage.setItem('gemini_theme', theme);
             }, [theme]);
-
             useEffect(() => {
                 safeStorage.setItem('gemini_language', language);
                 document.documentElement.lang = language;
             }, [language]);
-
             useEffect(() => {
                 const storedNick = safeStorage.getItem('gemini_nickname');
-                if (!storedNick) setIsWelcomeModalOpen(true);
-                else setNickname(storedNick);
+                if (!storedNick) setIsWelcomeModalOpen(true); else setNickname(storedNick);
             }, []);
-
+            useEffect(() => { document.title = safeMode ? "Workspace" : (tabTitle || "not ai"); }, [safeMode, tabTitle]);
             useEffect(() => {
-                if (safeMode) document.title = "Workspace";
-                else document.title = tabTitle || "not ai";
-            }, [safeMode, tabTitle]);
-
-            useEffect(() => {
-                if (isSettingsOpen || isMemoryModalOpen) {
-                    const timer = setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 50);
-                    return () => clearTimeout(timer);
-                }
-            }, [isSettingsOpen, isMemoryModalOpen]);
+                const timer = setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 60);
+                return () => clearTimeout(timer);
+            }, [isSettingsOpen, isMemoryModalOpen, reasoningModalMsg, costModalMsg, isModelMenuOpen]);
 
             const fetchBalance = async () => {
                 const key = apiKeyRef.current;
                 if (!key) { setBalanceData(null); return; }
                 try {
-                    const res = await fetch(`${API_BASE}/v1/auth/key`, {
-                        method: 'GET',
-                        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' }
-                    });
+                    const res = await fetch(`${API_BASE}/v1/auth/key`, { headers: { 'Authorization': `Bearer ${key}` } });
                     if (!res.ok) { setBalanceData(null); return; }
                     const data = await res.json();
                     if (data && data.data) {
                         const { limit, usage } = data.data;
-                        setBalanceData({
-                            limit: limit !== null ? Number(limit) : 0,
-                            usage: usage !== null ? Number(usage) : 0
-                        });
+                        setBalanceData({ limit: limit !== null ? Number(limit) : 0, usage: usage !== null ? Number(usage) : 0 });
                     }
-                } catch (e) { console.error("Balance fetch error:", e); setBalanceData(null); }
+                } catch (e) { setBalanceData(null); }
             };
-
             useEffect(() => { fetchBalance(); }, [apiKey]);
 
             useEffect(() => {
                 const loadChats = async () => {
                     try {
-                        const savedChats = await db.getChats();
-                        if (!savedChats || savedChats.length === 0) {
+                        const saved = await db.getChats();
+                        if (!saved || saved.length === 0) {
                             const legacy = safeStorage.getItem('gemini_chats_v4');
                             if (legacy) {
-                                const parsedLegacy = JSON.parse(legacy);
-                                setChats(parsedLegacy);
-                                if (parsedLegacy.length) setActiveChatId(parsedLegacy[0].id);
-                                else createNewChat();
-                            } else { createNewChat(); }
+                                const parsed = JSON.parse(legacy);
+                                setChats(parsed);
+                                if (parsed.length) setActiveChatId(parsed[0].id); else createNewChat();
+                            } else createNewChat();
                         } else {
-                            setChats(savedChats);
-                            if (savedChats.length) setActiveChatId(savedChats[0].id);
-                            else createNewChat();
+                            setChats(saved);
+                            if (saved.length) setActiveChatId(saved[0].id); else createNewChat();
                         }
-                    } catch (e) {
-                        console.error("DB Load Error", e);
-                        setLoadError(true);
-                        createNewChat();
-                    } finally { setIsChatsLoaded(true); }
+                    } catch (e) { setLoadError(true); createNewChat(); }
+                    finally { setIsChatsLoaded(true); }
                 };
                 loadChats();
             }, []);
 
             useEffect(() => {
                 if (isChatsLoaded && !loadError) {
-                    const timer = setTimeout(() => { db.saveChats(chats).catch(e => console.error("Save Error", e)); }, 500);
+                    const timer = setTimeout(() => { db.saveChats(chats).catch(e => console.error(e)); }, 500);
                     return () => clearTimeout(timer);
                 }
             }, [chats, isChatsLoaded, loadError]);
 
             useEffect(() => {
-                if (!isUserScrolledUp.current && chatContainerRef.current) {
+                if (!isUserScrolledUp.current && chatContainerRef.current)
                     chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-                }
             }, [chats, isLoading]);
 
             useEffect(() => {
@@ -554,378 +648,271 @@
 
             const saveNickname = (name) => {
                 const finalName = name.trim() || t.guest;
-                setNickname(finalName);
-                safeStorage.setItem('gemini_nickname', finalName);
+                setNickname(finalName); safeStorage.setItem('gemini_nickname', finalName);
                 setIsWelcomeModalOpen(false);
             };
-
             const openSettings = () => {
                 setTempTheme(theme); setTempLanguage(language); setTempNickname(nickname);
-                setTempTabTitle(tabTitle); setTempApiKey(apiKey); setTempProvider(provider);
-                setIsSettingsOpen(true);
+                setTempTabTitle(tabTitle); setTempApiKey(apiKey); setIsSettingsOpen(true);
             };
-
             const saveSettings = () => {
                 const finalName = tempNickname.trim() || t.guest;
                 const finalTab = tempTabTitle.trim() || t.tabTitlePlaceholder;
                 setTheme(tempTheme); setLanguage(tempLanguage); setNickname(finalName);
-                setTabTitle(finalTab); setApiKey(tempApiKey); setProvider(tempProvider);
+                setTabTitle(finalTab); setApiKey(tempApiKey);
                 safeStorage.setItem('gemini_nickname', finalName);
                 safeStorage.setItem('gemini_tab_title', finalTab);
                 safeStorage.setItem('gemini_user_api_key', tempApiKey);
-                safeStorage.setItem('app_provider', tempProvider);
                 setIsSettingsOpen(false);
-                // ИСПРАВЛЕНО: используем актуальный ключ для запроса баланса
                 apiKeyRef.current = tempApiKey;
                 fetchBalance();
             };
-
             const clearAllHistory = async () => {
-                const confirmMsg = language === 'ru'
-                    ? "Удалить ВСЮ историю из базы данных? Это нельзя отменить."
-                    : "Slet hele din historik? Dette kan ikke fortrydes.";
-                if (confirm(confirmMsg)) {
-                    await db.clear();
-                    safeStorage.removeItem('gemini_chats_v4');
-                    setChats([]);
-                    createNewChat();
-                    setIsSettingsOpen(false);
+                const msg = language === 'ru' ? "Удалить ВСЮ историю из базы данных? Это нельзя отменить." : "Slet hele din historik?";
+                if (confirm(msg)) {
+                    await db.clear(); safeStorage.removeItem('gemini_chats_v4');
+                    setChats([]); createNewChat(); setIsSettingsOpen(false);
                 }
             };
-
-            const openMemoryModal = () => {
-                setTempSystemInstruction(systemInstruction);
-                setIsSettingsOpen(false);
-                setIsMemoryModalOpen(true);
-            };
-
+            const openMemoryModal = () => { setTempSystemInstruction(systemInstruction); setIsSettingsOpen(false); setIsMemoryModalOpen(true); };
             const saveMemory = () => {
                 setSystemInstruction(tempSystemInstruction);
                 safeStorage.setItem('gemini_system_instruction', tempSystemInstruction);
                 setIsMemoryModalOpen(false);
             };
-
             const createNewChat = () => {
-                const currentChat = chats.find(c => c.id === activeChatId);
-                if (currentChat && currentChat.messages.length === 0) {
-                    setIsSidebarOpen(false); setInput(''); return;
-                }
+                const cur = chats.find(c => c.id === activeChatId);
+                if (cur && cur.messages.length === 0) { setIsSidebarOpen(false); setInput(''); return; }
                 const newChat = { id: Date.now().toString(), title: t.newChat, messages: [], timestamp: Date.now() };
-                setChats(prev => [newChat, ...prev]);
-                setActiveChatId(newChat.id);
-                setIsSidebarOpen(false);
+                setChats(prev => [newChat, ...prev]); setActiveChatId(newChat.id); setIsSidebarOpen(false);
             };
-
             const handleSwitchChat = (targetId) => {
                 if (activeChatId === targetId) return;
-                const currentChat = chats.find(c => c.id === activeChatId);
-                if (currentChat && currentChat.messages.length === 0) {
-                    setChats(prev => prev.filter(c => c.id !== activeChatId));
-                }
-                setActiveChatId(targetId);
-                setIsSidebarOpen(false);
+                const cur = chats.find(c => c.id === activeChatId);
+                if (cur && cur.messages.length === 0) setChats(prev => prev.filter(c => c.id !== activeChatId));
+                setActiveChatId(targetId); setIsSidebarOpen(false);
             };
-
             const deleteChat = (e, id) => {
                 e.stopPropagation();
                 const filtered = chats.filter(c => c.id !== id);
                 setChats(filtered);
-                if (activeChatId === id) {
-                    if (filtered.length) setActiveChatId(filtered[0].id);
-                    else createNewChat();
-                }
+                if (activeChatId === id) { if (filtered.length) setActiveChatId(filtered[0].id); else createNewChat(); }
             };
-
-            // ИСПРАВЛЕНО: останавливаем генерацию в правильном чате (по сохранённому ID контроллера)
             const handleStopGeneration = () => {
-                if (abortControllerRef.current) {
-                    const targetChatId = abortControllerRef.current.chatId;
-                    abortControllerRef.current.abort();
-                    abortControllerRef.current = null;
-                    setIsLoading(false);
-                    setIsGenerating(false);
-                    setChats(prev => prev.map(c => {
-                        if (c.id === targetChatId) {
-                            const newMsgs = [...c.messages];
-                            const last = newMsgs[newMsgs.length - 1];
-                            if (last && last.isThinking) {
-                                newMsgs[newMsgs.length - 1] = { ...last, isThinking: false, text: t.reqStopped, isError: true };
-                            }
-                            return { ...c, messages: newMsgs };
-                        }
-                        return c;
-                    }));
-                }
+                if (abortControllerRef.current) { abortControllerRef.current.abort(); setIsLoading(false); }
             };
-
             const handleChatScroll = () => {
                 if (!chatContainerRef.current) return;
                 const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-                const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-                const isScrollingUp = scrollTop < lastScrollTopRef.current;
+                const dist = scrollHeight - scrollTop - clientHeight;
+                const up = scrollTop < lastScrollTopRef.current;
                 lastScrollTopRef.current = scrollTop;
-                if (isScrollingUp && distanceFromBottom > 80) isUserScrolledUp.current = true;
-                else if (distanceFromBottom < 40) isUserScrolledUp.current = false;
+                if (up && dist > 80) isUserScrolledUp.current = true;
+                else if (dist < 40) isUserScrolledUp.current = false;
             };
-
             const handlePaste = (e) => {
-                const items = e.clipboardData?.items;
-                if (!items) return;
+                const items = e.clipboardData?.items; if (!items) return;
                 for (let i = 0; i < items.length; i++) {
                     if (items[i].type.indexOf('image') !== -1) {
                         const file = items[i].getAsFile();
                         if (file) {
                             const reader = new FileReader();
-                            reader.onload = (event) => setAttachments(prev => [...prev, { base64: event.target.result, name: file.name || 'image.png' }]);
+                            reader.onload = (ev) => setAttachments(prev => [...prev, { base64: ev.target.result, name: file.name || 'image.png' }]);
                             reader.readAsDataURL(file);
                         }
                     }
                 }
             };
-
             const handleFileChange = (e) => {
-                const files = Array.from(e.target.files);
-                files.forEach(file => {
+                Array.from(e.target.files).forEach(file => {
                     const reader = new FileReader();
-                    reader.onload = (event) => setAttachments(prev => [...prev, { base64: event.target.result, name: file.name }]);
+                    reader.onload = (ev) => setAttachments(prev => [...prev, { base64: ev.target.result, name: file.name }]);
                     reader.readAsDataURL(file);
                 });
                 e.target.value = null;
             };
 
             const generateChatTitle = async (chatId, userMessage) => {
-                // ИСПРАВЛЕНО: проверка ключа перед запросом
                 if (!apiKeyRef.current) return;
                 try {
-                    const modelName = 'google/gemini-3.1-flash-lite';
-                    const prompt = `Generate a very short, concise, and natural title (maximum 3-5 words) for a chat that starts with the message below. The title must be in the same language as the message. Do NOT use quotes! Message: "${userMessage.slice(0, 500)}"`;
+                    const prompt = `Generate a very short, concise title (max 3-5 words) in the same language as the message. No quotes. Message: "${userMessage.slice(0,500)}"`;
                     const res = await fetch(`${API_BASE}/v1/chat/completions`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${apiKeyRef.current}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ model: modelName, messages: [{ role: 'user', content: prompt }] })
+                        body: JSON.stringify({ model: models[0]?.id || 'google/gemini-3.7-flash', messages: [{ role: 'user', content: prompt }], max_tokens: 40 })
                     });
                     if (!res.ok) return;
                     const data = await res.json();
-                    const newTitle = data.choices?.[0]?.message?.content?.trim()?.replace(/^["']|["']$/g, '');
-                    if (newTitle) setChats(prev => prev.map(c => c.id === chatId ? { ...c, title: newTitle } : c));
-                } catch (e) { console.error("Title Gen Error:", e); }
+                    const title = data.choices?.[0]?.message?.content?.trim()?.replace(/^["']|["']$/g, '');
+                    if (title) setChats(prev => prev.map(c => c.id === chatId ? { ...c, title } : c));
+                } catch (e) {}
             };
 
-            // ИСПРАВЛЕНО: pollCost находит сообщение по его уникальному id, а не по индексу
             const pollCost = async (genId, chatId, messageId) => {
-                const maxAttempts = 50;
-                let currentAttempt = 0;
+                let attempt = 0;
                 const check = async () => {
-                    if (currentAttempt >= maxAttempts) return;
+                    if (attempt >= 30) return;
                     try {
-                        const costRes = await fetch(`${API_BASE}/v1/generation?id=${genId}`, {
-                            headers: { 'Authorization': `Bearer ${apiKeyRef.current}` }
-                        });
-                        if (costRes.ok) {
-                            const costData = await costRes.json();
-                            const cost = costData.data?.total_cost;
+                        const res = await fetch(`${API_BASE}/v1/generation?id=${genId}`, { headers: { 'Authorization': `Bearer ${apiKeyRef.current}` } });
+                        if (res.ok) {
+                            const data = await res.json();
+                            const cost = data.data?.total_cost;
                             if (cost !== undefined && cost !== null && cost > 0) {
-                                setChats(prev => prev.map(c => {
-                                    if (c.id === chatId) {
-                                        return { ...c, messages: c.messages.map(m => m.id === messageId ? { ...m, cost } : m) };
-                                    }
-                                    return c;
-                                }));
+                                setChats(prev => prev.map(c => c.id === chatId
+                                    ? { ...c, messages: c.messages.map(m => m.id === messageId ? { ...m, cost } : m) } : c));
                                 return;
                             }
                         }
-                    } catch (err) { console.error("Cost polling error:", err); }
-                    currentAttempt++;
-                    setTimeout(check, 1000);
+                    } catch (e) {}
+                    attempt++; setTimeout(check, 1200);
                 };
                 check();
             };
 
+            /* ---------- Perplexity Sonar ---------- */
+            const runSonarSearch = async (query, signal) => {
+                const res = await fetch(`${API_BASE}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${apiKeyRef.current}`, 'Content-Type': 'application/json', 'X-Title': 'not ai' },
+                    body: JSON.stringify({
+                        model: SEARCH_MODEL,
+                        messages: [
+                            { role: 'system', content: 'Ты — поисковый модуль. Дай сжатую фактическую сводку по запросу: только факты, числа, даты, имена и ссылки на источники. Без вступлений и рассуждений.' },
+                            { role: 'user', content: query }
+                        ],
+                        max_tokens: 900,
+                        usage: { include: true }
+                    }),
+                    signal
+                });
+                if (!res.ok) {
+                    let m = `HTTP ${res.status}`;
+                    try { const err = await res.json(); m = err.error?.message || m; } catch {}
+                    throw new Error(m);
+                }
+                const data = await res.json();
+                const ann = (data.choices?.[0]?.message?.annotations || [])
+                    .map(a => a?.url_citation?.url).filter(Boolean);
+                return {
+                    content: data.choices?.[0]?.message?.content || '',
+                    citations: (Array.isArray(data.citations) && data.citations.length ? data.citations : ann).map(String),
+                    cost: Number(data.usage?.cost || 0)
+                };
+            };
+
+            /* ---------- ОТПРАВКА СООБЩЕНИЯ ---------- */
             const sendMessage = async () => {
-                if ((!input.trim() && attachments.length === 0)) return;
-                // ИСПРАВЛЕНО: понятное сообщение, если нет ключа
+                if (!input.trim() && attachments.length === 0) return;
+                const model = currentModel;
+
                 if (!apiKey) {
-                    setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, { id: genMsgId(), role: 'model', text: t.noApiKey, isError: true, isThinking: false }] } : c));
+                    setChats(prev => prev.map(c => c.id === activeChatId
+                        ? { ...c, messages: [...c.messages, { id: genMsgId(), role: 'model', text: t.noApiKey, isError: true }] } : c));
                     return;
                 }
 
-                isUserScrolledUp.current = false;
-                lastScrollTopRef.current = 0;
-                if (chatContainerRef.current) chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-
+                isUserScrolledUp.current = false; lastScrollTopRef.current = 0;
                 const userText = input;
                 const activeAttachments = [...attachments];
-                const isFirstMessage = activeChat?.messages.length === 0;
+                const isFirstMessage = (activeChat?.messages.length || 0) === 0;
                 const currentChatId = activeChatId;
-                const currentProvider = provider;
-                const currentModelType = modelType;
+                setInput(''); setAttachments([]);
 
-                setInput('');
-                setAttachments([]);
-
-                // Проверка поддержки изображений
-                if (activeAttachments.length > 0 && (currentProvider === 'deepseek' || (currentProvider === 'free' && currentModelType === 'flash'))) {
-                    setChats(prev => prev.map(chat => {
-                        if (chat.id === currentChatId) {
-                            const title = chat.messages.length === 0 ? "Изображение" : chat.title;
-                            return {
-                                ...chat, title,
-                                messages: [
-                                    ...chat.messages,
-                                    { id: genMsgId(), role: 'user', text: userText, attachments: activeAttachments },
-                                    { id: genMsgId(), role: 'model',
-                                        text: language === 'ru'
-                                            ? `⚠️ **Ошибка:** Выбранная нейросеть не поддерживает работу с фотографиями. Пожалуйста, отправляйте только текст или выберите другую модель (например, Gemini, ChatGPT, Llama 3.3 или Gemma 4).`
-                                            : `⚠️ **Fejl:** Den valgte model understøtter ikke billeder. Send venligst kun tekst eller vælg en anden model (f.eks. Gemini, ChatGPT, Llama 3.3 eller Gemma 4).`,
-                                        isError: true, provider: currentProvider }
-                                ]
-                            };
-                        }
-                        return chat;
-                    }));
+                if (activeAttachments.length > 0 && model.vision === false) {
+                    setChats(prev => prev.map(c => c.id === currentChatId ? {
+                        ...c,
+                        title: c.messages.length === 0 ? (userText.slice(0,30) || 'Image') : c.title,
+                        messages: [...c.messages,
+                            { id: genMsgId(), role: 'user', text: userText, attachments: activeAttachments },
+                            { id: genMsgId(), role: 'model', text: t.visionUnsupported, isError: true, icon: model.icon, modelName: model.name }]
+                    } : c));
                     return;
                 }
 
-                setIsLoading(true);
-                setIsGenerating(true);
-
-                // ИСПРАВЛЕНО: у сообщения модели есть уникальный id
+                setIsLoading(true); setIsGenerating(true);
                 const modelMsgId = genMsgId();
-                setChats(prev => prev.map(chat => {
-                    if (chat.id === currentChatId) {
-                        const title = chat.messages.length === 0 ? (userText.slice(0, 30) || "Image upload") : chat.title;
-                        return {
-                            ...chat, title,
-                            messages: [
-                                ...chat.messages,
-                                { id: genMsgId(), role: 'user', text: userText, attachments: activeAttachments },
-                                { id: modelMsgId, role: 'model', text: '', isThinking: true, provider: currentProvider, modelType: currentModelType, actualModel: "", cost: 0 }
-                            ]
-                        };
-                    }
-                    return chat;
-                }));
+
+                setChats(prev => prev.map(c => c.id === currentChatId ? {
+                    ...c,
+                    title: c.messages.length === 0 ? (userText.slice(0,30) || "Image upload") : c.title,
+                    messages: [...c.messages,
+                        { id: genMsgId(), role: 'user', text: userText, attachments: activeAttachments },
+                        { id: modelMsgId, role: 'model', text: '', isThinking: true, icon: model.icon, modelName: model.name,
+                          modelId: model.id, effort: effectiveEffort, reasoning: '', searches: [], searchOpen: true,
+                          cost: 0, searchCost: 0, usage: null, actualModel: '' }]
+                } : c));
 
                 if (isFirstMessage && userText) generateChatTitle(currentChatId, userText);
 
                 const controller = new AbortController();
-                controller.chatId = currentChatId; // запоминаем чат
                 abortControllerRef.current = controller;
 
-                // ИСПРАВЛЕНО: переменные состояния потока объявлены ВНЕ try, доступны в catch/finally
-                let isStreamFinished = false;
+                const patch = (updater) => setChats(prev => prev.map(c => c.id === currentChatId
+                    ? { ...c, messages: c.messages.map(m => m.id === modelMsgId ? updater(m) : m) } : c));
 
-                try {
-                    let modelName = "";
-                    if (currentProvider === 'gemini') {
-                        if (currentModelType === 'pro') modelName = 'google/gemini-3.1-pro-preview';
-                        else if (currentModelType === 'flash3.5') modelName = 'google/gemini-3.7-flash';
-                        else modelName = 'google/gemini-3-flash-preview';
-                    } else if (currentProvider === 'chatgpt') {
-                        modelName = currentModelType === 'pro' ? 'openai/o4-mini' : 'openai/gpt-5.4-mini';
-                    } else if (currentProvider === 'deepseek') {
-                        modelName = currentModelType === 'pro' ? 'deepseek/deepseek-r1' : 'deepseek/deepseek-chat-v3.1';
-                    } else if (currentProvider === 'free') {
-                        if (currentModelType === 'pro') modelName = 'meta-llama/llama-3.3-70b-instruct';
-                        else if (currentModelType === 'gemma') modelName = 'google/gemma-4-31b-it';
-                        else modelName = 'openrouter/free';
+                let fullText = "", displayed = "", reasoningAcc = "", lastReasoningLen = -1;
+                let streamFinished = false, finalized = false;
+                let mainCost = 0, searchCost = 0, lastGenId = null;
+
+                const finalize = () => {
+                    if (finalized) return;
+                    finalized = true;
+                    setIsGenerating(false); setIsLoading(false);
+                    if (abortControllerRef.current === controller) abortControllerRef.current = null;
+                    patch(m => ({ ...m, text: fullText || m.text, reasoning: reasoningAcc, searchOpen: false, isThinking: false }));
+                    if (mainCost === 0 && lastGenId && !model.free) pollCost(lastGenId, currentChatId, modelMsgId);
+                    fetchBalance();
+                };
+
+                const updateUI = () => {
+                    if (displayed.length < fullText.length) {
+                        const diff = fullText.length - displayed.length;
+                        displayed = fullText.slice(0, displayed.length + Math.max(1, Math.floor(diff / 3)));
+                        lastReasoningLen = reasoningAcc.length;
+                        patch(m => ({ ...m, text: displayed, reasoning: reasoningAcc, isThinking: false }));
+                    } else if (reasoningAcc.length !== lastReasoningLen) {
+                        lastReasoningLen = reasoningAcc.length;
+                        patch(m => ({ ...m, reasoning: reasoningAcc }));
                     }
+                    if (!streamFinished || displayed.length < fullText.length) requestAnimationFrame(updateUI);
+                    else finalize();
+                };
+                requestAnimationFrame(updateUI);
 
-                    // ИСПРАВЛЕНО: больше токенов, особенно для reasoning-моделей
-                    const isReasoning = currentModelType === 'pro' && (currentProvider === 'deepseek' || currentProvider === 'chatgpt');
-                    const maxTokensLimit = isReasoning ? 32000 : (currentProvider === 'gemini' ? 8192 : 8000);
-
-                    let openRouterMessages = [];
-                    if (systemInstruction.trim()) openRouterMessages.push({ role: 'system', content: systemInstruction });
-
-                    const history = activeChat?.messages.slice(-10) || [];
-                    for (const msg of history) {
-                        if (msg.role === 'user') {
-                            let histContent;
-                            if (msg.attachments && msg.attachments.length > 0) {
-                                histContent = [];
-                                if (msg.text) histContent.push({ type: 'text', text: msg.text });
-                                msg.attachments.forEach(att => histContent.push({ type: 'image_url', image_url: { url: att.base64 } }));
-                            } else { histContent = msg.text || " "; }
-                            openRouterMessages.push({ role: 'user', content: histContent });
-                        } else if (msg.role === 'model' && !msg.isError) {
-                            openRouterMessages.push({ role: 'assistant', content: msg.text || " " });
-                        }
-                    }
-
-                    let currentContent;
-                    if (activeAttachments.length > 0) {
-                        currentContent = [];
-                        if (userText) currentContent.push({ type: 'text', text: userText });
-                        activeAttachments.forEach(att => currentContent.push({ type: 'image_url', image_url: { url: att.base64 } }));
-                    } else { currentContent = userText; }
-                    openRouterMessages.push({ role: 'user', content: currentContent });
-
-                    const bodyPayload = {
-                        model: modelName,
-                        messages: openRouterMessages,
-                        max_tokens: maxTokensLimit,
-                        stream: true
+                /* один проход стрима */
+                const streamTurn = async (messages, allowTools) => {
+                    const body = {
+                        model: model.id,
+                        messages,
+                        max_tokens: model.maxTokens || 8192,
+                        stream: true,
+                        usage: { include: true }
                     };
-                    // ИСПРАВЛЕНО: веб-поиск включается только если пользователь его выбрал
-                    if (currentProvider !== 'free') {
-                      bodyPayload.plugins = [{ id: "web" }];
-                    }
+                    if (model.provider) body.provider = model.provider;
+                    if (model.reasoning && effectiveEffort) body.reasoning = { effort: effectiveEffort };
+                    if (allowTools) { body.tools = [SEARCH_TOOL]; body.tool_choice = 'auto'; }
 
                     const res = await fetch(`${API_BASE}/v1/chat/completions`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${apiKey}`,
+                            'Authorization': `Bearer ${apiKeyRef.current}`,
                             'HTTP-Referer': window.location.href,
                             'X-Title': 'not ai',
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(bodyPayload),
+                        body: JSON.stringify(body),
                         signal: controller.signal
                     });
-
                     if (!res.ok) {
                         let errMsg = t.requestError;
-                        try { const errorData = await res.json(); errMsg = errorData.error?.message || errMsg; } catch {}
+                        try { const err = await res.json(); errMsg = err.error?.message || errMsg; } catch {}
                         throw new Error(errMsg);
                     }
 
-                    let fullResponseText = "";
-                    let displayedText = "";
-                    let genId = null;
-
-                    const updateUI = () => {
-                        // ИСПРАВЛЕНО: цикл прекращается, если контроллер сменился (новый запрос/стоп)
-                        if (abortControllerRef.current !== controller && isStreamFinished) return;
-
-                        if (displayedText.length < fullResponseText.length) {
-                            const diff = fullResponseText.length - displayedText.length;
-                            const charsToReveal = Math.max(1, Math.floor(diff / 3));
-                            displayedText = fullResponseText.slice(0, displayedText.length + charsToReveal);
-                            setChats(prev => prev.map(c => {
-                                if (c.id === currentChatId) {
-                                    return { ...c, messages: c.messages.map(m => m.id === modelMsgId ? { ...m, text: displayedText, isThinking: false } : m) };
-                                }
-                                return c;
-                            }));
-                        }
-
-                        if (!isStreamFinished || displayedText.length < fullResponseText.length) {
-                            requestAnimationFrame(updateUI);
-                        } else {
-                            setIsGenerating(false);
-                            if (abortControllerRef.current === controller) abortControllerRef.current = null;
-                            if (genId && currentProvider !== 'free') {
-                                pollCost(genId, currentChatId, modelMsgId);
-                            }
-                        }
-                    };
-                    requestAnimationFrame(updateUI);
-
                     const reader = res.body.getReader();
                     const decoder = new TextDecoder("utf-8");
-                    let isFirstChunk = true;
-                    let buffer = "";
+                    let buffer = "", turnContent = "", firstChunk = true;
+                    const toolAcc = [];
 
                     while (true) {
                         const { done, value } = await reader.read();
@@ -934,120 +921,146 @@
                         const lines = buffer.split('\n');
                         buffer = lines.pop();
                         for (const line of lines) {
-                            if (line.trim() === '') continue;
-                            if (line.startsWith('data: ')) {
-                                const dataStr = line.slice(6);
-                                if (dataStr.trim() === '[DONE]') continue;
-                                try {
-                                    const data = JSON.parse(dataStr);
-                                    if (!genId && data.id) genId = data.id;
-                                    if (isFirstChunk) {
-                                        setIsLoading(false);
-                                        isFirstChunk = false;
-                                        setChats(prev => prev.map(c => {
-                                            if (c.id === currentChatId) {
-                                                return { ...c, messages: c.messages.map(m => m.id === modelMsgId ? { ...m, actualModel: data.model || "", isThinking: false } : m) };
-                                            }
-                                            return c;
-                                        }));
-                                    }
-                                    const delta = data.choices?.[0]?.delta?.content || "";
-                                    if (delta) fullResponseText += delta;
-                                } catch (e) { /* частичный JSON — игнорируем */ }
+                            const s = line.trim();
+                            if (!s || !s.startsWith('data: ')) continue;
+                            const dataStr = s.slice(6);
+                            if (dataStr === '[DONE]') continue;
+                            let data;
+                            try { data = JSON.parse(dataStr); } catch { continue; }
+
+                            if (data.id) lastGenId = data.id;
+                            if (data.usage && data.usage.cost != null) {
+                                mainCost += Number(data.usage.cost) || 0;
+                                patch(m => ({ ...m, cost: mainCost, usage: data.usage }));
+                            }
+                            if (firstChunk) {
+                                firstChunk = false; setIsLoading(false);
+                                patch(m => ({ ...m, actualModel: data.model || '', isThinking: false }));
+                            }
+                            const delta = data.choices?.[0]?.delta;
+                            if (!delta) continue;
+                            if (delta.reasoning) reasoningAcc += delta.reasoning;
+                            if (delta.content) { turnContent += delta.content; fullText += delta.content; }
+                            if (Array.isArray(delta.tool_calls)) {
+                                for (const call of delta.tool_calls) {
+                                    const i = call.index ?? 0;
+                                    if (!toolAcc[i]) toolAcc[i] = { id: '', type: 'function', function: { name: '', arguments: '' } };
+                                    if (call.id) toolAcc[i].id = call.id;
+                                    if (call.function?.name) toolAcc[i].function.name += call.function.name;
+                                    if (call.function?.arguments) toolAcc[i].function.arguments += call.function.arguments;
+                                }
                             }
                         }
                     }
-                    isStreamFinished = true;
+                    return { content: turnContent, toolCalls: toolAcc.filter(Boolean).filter(c => c.function.name) };
+                };
 
-                    // ИСПРАВЛЕНО: если стрим завершился без текста — показываем сообщение о пустом ответе
-                    if (!fullResponseText) {
-                        setChats(prev => prev.map(c => {
-                            if (c.id === currentChatId) {
-                                return { ...c, messages: c.messages.map(m => m.id === modelMsgId ? { ...m, text: `⚠️ ${t.emptyResponse}`, isError: true, isThinking: false } : m) };
-                            }
-                            return c;
-                        }));
+                try {
+                    /* контекст */
+                    const convo = [];
+                    if (systemInstruction.trim()) convo.push({ role: 'system', content: systemInstruction });
+                    const history = activeChat?.messages.slice(-10) || [];
+                    for (const msg of history) {
+                        if (msg.role === 'user') {
+                            let content;
+                            if (msg.attachments && msg.attachments.length) {
+                                content = [];
+                                if (msg.text) content.push({ type: 'text', text: msg.text });
+                                msg.attachments.forEach(a => content.push({ type: 'image_url', image_url: { url: a.base64 } }));
+                            } else content = msg.text || " ";
+                            convo.push({ role: 'user', content });
+                        } else if (msg.role === 'model' && !msg.isError && msg.text) {
+                            convo.push({ role: 'assistant', content: msg.text });
+                        }
                     }
+                    let content;
+                    if (activeAttachments.length) {
+                        content = [];
+                        if (userText) content.push({ type: 'text', text: userText });
+                        activeAttachments.forEach(a => content.push({ type: 'image_url', image_url: { url: a.base64 } }));
+                    } else content = userText;
+                    convo.push({ role: 'user', content });
+
+                    /* цикл tool-calling */
+                    let searchCount = 0, guard = 0;
+                    while (guard++ < MAX_SEARCHES + 2) {
+                        const allowTools = webSearch && model.supportsTools !== false && searchCount < MAX_SEARCHES;
+                        const turn = await streamTurn(convo, allowTools);
+
+                        if (turn.toolCalls.length && allowTools) {
+                            convo.push({ role: 'assistant', content: turn.content || "", tool_calls: turn.toolCalls });
+                            for (const call of turn.toolCalls) {
+                                if (searchCount >= MAX_SEARCHES) {
+                                    convo.push({ role: 'tool', tool_call_id: call.id, name: call.function.name, content: t.searchLimitNote });
+                                    continue;
+                                }
+                                let query = '';
+                                try { query = JSON.parse(call.function.arguments || '{}').query || ''; } catch {}
+                                searchCount++;
+                                const searchId = genMsgId();
+                                patch(m => ({ ...m, isThinking: false, searchOpen: true,
+                                    searches: [...(m.searches || []), { id: searchId, query, status: 'running' }] }));
+                                try {
+                                    const r = await runSonarSearch(query, controller.signal);
+                                    searchCost += r.cost || 0;
+                                    patch(m => ({ ...m, searchCost,
+                                        searches: (m.searches || []).map(s => s.id === searchId
+                                            ? { ...s, status: 'done', summary: r.content, citations: r.citations, cost: r.cost } : s) }));
+                                    convo.push({ role: 'tool', tool_call_id: call.id, name: call.function.name,
+                                        content: JSON.stringify({ query, answer: r.content, sources: r.citations }) });
+                                } catch (err) {
+                                    if (err.name === 'AbortError') throw err;
+                                    patch(m => ({ ...m, searches: (m.searches || []).map(s => s.id === searchId
+                                        ? { ...s, status: 'error', error: err.message } : s) }));
+                                    convo.push({ role: 'tool', tool_call_id: call.id, name: call.function.name,
+                                        content: `${t.searchError}: ${err.message}` });
+                                }
+                            }
+                            continue;
+                        }
+                        break;
+                    }
+
+                    streamFinished = true;
+                    if (!fullText) patch(m => ({ ...m, text: `⚠️ ${t.emptyResponse}`, isError: true, isThinking: false, searchOpen: false }));
 
                 } catch (e) {
-                    isStreamFinished = true; // теперь переменная в области видимости — без ReferenceError
-                    // ИСПРАВЛЕНО: заменяем «осиротевшее» thinking-сообщение, а не плодим новое
+                    streamFinished = true; displayed = fullText;
                     if (e.name === 'AbortError') {
-                        setChats(prev => prev.map(c => {
-                            if (c.id === currentChatId) {
-                                return { ...c, messages: c.messages.map(m => m.id === modelMsgId ? { ...m, text: t.reqStopped, isError: true, isThinking: false } : m) };
-                            }
-                            return c;
-                        }));
+                        patch(m => ({ ...m, text: fullText ? fullText + `\n\n${t.reqStopped}` : t.reqStopped, isError: !fullText, isThinking: false, searchOpen: false }));
                     } else {
-                        setChats(prev => prev.map(c => {
-                            if (c.id === currentChatId) {
-                                return { ...c, messages: c.messages.map(m => m.id === modelMsgId ? { ...m, text: `⚠️ ${t.errorPrefix}${e.message}`, isError: true, isThinking: false } : m) };
-                            }
-                            return c;
-                        }));
+                        patch(m => ({ ...m, text: fullText ? fullText + `\n\n⚠️ ${t.errorPrefix}${e.message}` : `⚠️ ${t.errorPrefix}${e.message}`, isError: !fullText, isThinking: false, searchOpen: false }));
                     }
-                    setIsGenerating(false);
-                    if (abortControllerRef.current === controller) abortControllerRef.current = null;
-                } finally {
-                    setIsLoading(false);
-                    fetchBalance();
+                    finalize();
                 }
             };
-
-            const modelDisplay = useMemo(() => {
-                if (provider === 'gemini') {
-                    if (modelType === 'pro') return 'Pro 3.1';
-                    if (modelType === 'flash3.5') return 'Flash 3.5';
-                    return 'Flash 3';
-                }
-                if (provider === 'chatgpt') return modelType === 'pro' ? 'o4-mini' : '5.4-mini';
-                if (provider === 'deepseek') return modelType === 'pro' ? 'R1' : 'Chat V3.1';
-                if (provider === 'free') {
-                    if (modelType === 'pro') return 'Llama 3.3';
-                    if (modelType === 'gemma') return 'Gemma 4';
-                    return 'Auto';
-                }
-                return 'Flash';
-            }, [provider, modelType]);
-
-            const providerName = useMemo(() => {
-                if (provider === 'gemini') return 'Gemini';
-                if (provider === 'chatgpt') return 'ChatGPT';
-                if (provider === 'deepseek') return 'DeepSeek';
-                if (provider === 'free') return t.freeModelsLabel;
-                return 'Gemini';
-            }, [provider, t]);
 
             const balancePercentage = useMemo(() => {
                 if (!balanceData || balanceData.limit <= 0) return 0;
                 return Math.min((balanceData.usage / balanceData.limit) * 100, 100);
             }, [balanceData]);
 
-            // ИСПРАВЛЕНО: сброс modelType на дефолтный при смене провайдера (чтобы не остаться на несуществующем 'gemma'/'flash3.5')
-            useEffect(() => {
-                const valid = {
-                    gemini: ['flash', 'flash3.5', 'pro'],
-                    chatgpt: ['flash', 'pro'],
-                    deepseek: ['flash', 'pro'],
-                    free: ['flash', 'gemma', 'pro']
-                };
-                if (!valid[provider]?.includes(modelType)) setModelType('flash');
-            }, [provider]);
+            const balanceLeft = useMemo(() => {
+                if (!balanceData || balanceData.limit <= 0) return null;
+                return Math.max(balanceData.limit - balanceData.usage, 0);
+            }, [balanceData]);
 
+            const toggleSearchPanel = (chatId, msgId) => setChats(prev => prev.map(c => c.id === chatId
+                ? { ...c, messages: c.messages.map(m => m.id === msgId ? { ...m, searchOpen: !m.searchOpen } : m) } : c));
+
+            /* ---------- RENDER ---------- */
             return (
                 <div className="flex h-screen w-full text-[var(--text-primary)] bg-[var(--bg-body)] overflow-hidden">
                     <button onClick={() => setSafeMode(!safeMode)} className="fixed bottom-0 right-0 w-6 h-6 z-[100] cursor-default opacity-5 hover:opacity-100 transition-opacity duration-500 bg-[var(--safe-btn)]" title="Toggle View"></button>
-
                     {safeMode && (<div className="hidden md:block fixed top-0 left-0 w-4 h-full z-[60]" onMouseEnter={() => setIsSidebarHovered(true)}></div>)}
 
                     <aside
-                        className={`fixed inset-y-0 left-0 z-50 w-[300px] bg-[var(--bg-sidebar)] transition-transform duration-300 flex flex-col border-r border-transparent ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${safeMode ? `md:fixed ${isSidebarHovered ? 'md:translate-x-0 shadow-2xl' : 'md:-translate-x-[300px]'}` : 'md:translate-x-0 md:static'}`}
+                        className={`fixed inset-y-0 left-0 z-50 w-[300px] bg-[var(--bg-sidebar)] transition-transform duration-300 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${safeMode ? `md:fixed ${isSidebarHovered ? 'md:translate-x-0 shadow-2xl' : 'md:-translate-x-[300px]'}` : 'md:translate-x-0 md:static'}`}
                         onMouseLeave={() => safeMode && setIsSidebarHovered(false)}
                         onMouseEnter={() => safeMode && setIsSidebarHovered(true)}
                     >
                         <div className="p-4 pt-6">
-                            <button onClick={createNewChat} className="flex items-center gap-3 w-fit px-4 py-3 bg-[var(--hover-bg)] hover:bg-opacity-80 rounded-full transition-colors text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                            <button onClick={createNewChat} className="flex items-center gap-3 w-fit px-4 py-3 bg-[var(--hover-bg)] rounded-full transition-colors text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                                 <Icon name={safeMode ? "edit-3" : "plus"} className="w-5 h-5" />
                                 <span className="pr-2">{safeMode ? t.newChatSafe : t.newChat}</span>
                             </button>
@@ -1055,7 +1068,7 @@
                         <div className="flex-1 overflow-y-auto px-2 space-y-1">
                             <div className="px-4 py-2 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">{t.recent}</div>
                             {chats.map(chat => (
-                                <div key={chat.id} onClick={() => handleSwitchChat(chat.id)} className={`group flex items-center justify-between p-3 px-4 rounded-full cursor-pointer text-sm transition-all ${activeChatId === chat.id ? 'bg-[var(--active-chat-bg)] text-[var(--active-chat-text)] font-medium' : 'hover:bg-[var(--hover-bg)] text-[var(--text-primary)]'}`}>
+                                <div key={chat.id} onClick={() => handleSwitchChat(chat.id)} className={`group flex items-center justify-between p-3 px-4 rounded-full cursor-pointer text-sm transition-all ${activeChatId === chat.id ? 'bg-[var(--active-chat-bg)] text-[var(--active-chat-text)] font-medium' : 'hover:bg-[var(--hover-bg)]'}`}>
                                     <div className="flex items-center gap-3 truncate">
                                         <Icon name={safeMode ? "file-text" : "message-square"} className="w-4 h-4 opacity-70" />
                                         <span className="truncate max-w-[160px]">{chat.title || t.newChat}</span>
@@ -1065,106 +1078,54 @@
                             ))}
                         </div>
                         <div className="p-4 mt-auto border-t border-[var(--border-color)] flex flex-col">
-                            <button onClick={openSettings} className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] transition-colors text-sm text-[var(--text-primary)]">
-                                <Icon name="settings" className="w-5 h-5 text-[var(--text-secondary)]" />
-                                <span>{t.settings}</span>
+                            <button onClick={openSettings} className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] transition-colors text-sm">
+                                <Icon name="settings" className="w-5 h-5 text-[var(--text-secondary)]" /><span>{t.settings}</span>
                             </button>
-
                             {!safeMode && (
-                                <div className="mt-4 px-3 flex flex-col gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={fetchBalance} title="Нажмите, чтобы обновить">
+                                <div className="mt-4 px-3 flex flex-col gap-2 cursor-pointer hover:opacity-80" onClick={fetchBalance} title="Обновить баланс">
                                     <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-secondary)]">
                                         <span>{t.balanceLabel}</span>
                                         <span>{balanceData ? `${balancePercentage.toFixed(1)}%` : '...'}</span>
                                     </div>
                                     <div className="w-full h-1.5 bg-[var(--border-color)] rounded-full overflow-hidden">
-                                        <div className="h-full bg-[var(--accent-blue)] transition-all duration-500 ease-out" style={{ width: `${balancePercentage}%` }}></div>
+                                        <div className="h-full bg-[var(--accent-blue)] transition-all duration-500" style={{ width: `${balancePercentage}%` }}></div>
                                     </div>
                                 </div>
                             )}
-                            <div className="mt-6 text-center text-[10px] text-[var(--text-secondary)] opacity-40 font-mono tracking-widest cursor-default">{APP_VERSION}</div>
+                            <div className="mt-6 text-center text-[10px] text-[var(--text-secondary)] opacity-40 font-mono tracking-widest">{APP_VERSION}</div>
                         </div>
                     </aside>
 
                     <main className="flex-1 flex flex-col relative h-full">
+                        {/* mobile header */}
                         <div className="md:hidden flex items-center justify-between p-4 bg-[var(--bg-body)]">
                             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}><Icon name="menu" className="w-6 h-6 text-[var(--text-secondary)]" /></button>
-                            <span className="font-medium text-[var(--text-primary)]">{safeMode ? 'Workspace' : providerName}</span>
+                            <button onClick={() => !safeMode && setIsModelMenuOpen(!isModelMenuOpen)} className="flex items-center gap-2 font-medium">
+                                {!safeMode && <ModelIcon icon={currentModel.icon} theme={theme} className="w-4 h-4" />}
+                                <span className="truncate max-w-[160px]">{safeMode ? 'Workspace' : currentModel.name}</span>
+                                {!safeMode && <Icon name="chevron-down" className="w-4 h-4" />}
+                            </button>
                             <div className="w-8"></div>
                         </div>
 
-                        <div className="hidden md:flex justify-between items-center p-4 absolute top-0 left-0 right-0 z-10 bg-[var(--bg-body)]">
+                        {/* desktop header */}
+                        <div className="hidden md:flex justify-between items-center p-4 absolute top-0 left-0 right-0 z-20 bg-[var(--bg-body)]">
                             <div className="relative">
                                 {safeMode ? (
-                                    <div className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)]"><span className="text-lg font-medium">Workspace</span></div>
+                                    <div className="flex items-center gap-2 px-3 py-2"><span className="text-lg font-medium">Workspace</span></div>
                                 ) : (
                                     <button onClick={() => setIsModelMenuOpen(!isModelMenuOpen)} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                                        <ProviderIcon provider={provider} theme={theme} className={`w-5 h-5`} active={true} />
-                                        <span className="text-lg font-medium ml-2">{providerName}</span>
-                                        <span className={`text-sm px-2 py-0.5 rounded ml-2 ${modelType === 'pro' || modelType === 'gemma' || modelType === 'flash3.5' ? 'bg-[var(--text-primary)] text-[var(--bg-body)]' : 'bg-[var(--border-color)] text-[var(--text-primary)]'}`}>{modelDisplay}</span>
-                                        <Icon name="chevron-down" className={`w-4 h-4 transition-transform ml-1 ${isModelMenuOpen ? 'rotate-180' : ''}`} />
+                                        <ModelIcon icon={currentModel.icon} theme={theme} className="w-5 h-5" />
+                                        <span className="text-lg font-medium ml-1">{currentModel.name}</span>
+                                        {currentModel.free && <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--border-color)]">{t.free}</span>}
+                                        {effectiveEffort && <span className="text-[10px] px-2 py-0.5 rounded bg-[var(--text-primary)] text-[var(--bg-body)] font-mono">{effectiveEffort}</span>}
+                                        <Icon name="chevron-down" className={`w-4 h-4 ml-1 transition-transform ${isModelMenuOpen ? 'rotate-180' : ''}`} />
                                     </button>
-                                )}
-                                {isModelMenuOpen && !safeMode && (
-                                    <div className="absolute top-full left-0 mt-2 w-72 bg-[var(--tool-menu-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl p-2 z-50 animate-slide-up">
-                                        {provider === 'gemini' ? (
-                                            <>
-                                                <button onClick={() => { setModelType('flash'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <GeminiIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'flash'} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemini 3 Flash</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.modelFlash}</div></div>
-                                                </button>
-                                                <button onClick={() => { setModelType('flash3.5'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash3.5' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <GeminiIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'flash3.5'} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemini 3.5 Flash</div><div className="text-xs text-[var(--text-secondary)] mt-1">{language === 'ru' ? 'Новейшая быстрая модель' : 'Nyeste hurtige model'}</div></div>
-                                                </button>
-                                                <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <GeminiIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'pro'} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemini 3.1 Pro</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.modelPro}</div></div>
-                                                </button>
-                                            </>
-                                        ) : provider === 'chatgpt' ? (
-                                            <>
-                                                <button onClick={() => { setModelType('flash'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <ChatGPTIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'flash'} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">ChatGPT 5.4-mini</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.chatgptFlash}</div></div>
-                                                </button>
-                                                <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <ChatGPTIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'pro'} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">ChatGPT o4-mini</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.chatgptPro}</div></div>
-                                                </button>
-                                            </>
-                                        ) : provider === 'deepseek' ? (
-                                            <>
-                                                <button onClick={() => { setModelType('flash'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <DeepSeekIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'flash'} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">DeepSeek Chat</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.deepseekChatDesc}</div></div>
-                                                </button>
-                                                <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <DeepSeekIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'pro'} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">DeepSeek R1</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.deepseekR1Desc}</div></div>
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <button onClick={() => { setModelType('flash'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'flash' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <RouterIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'flash'} theme={theme} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">{t.freeAutoLabel}</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.freeAutoDesc}</div></div>
-                                                </button>
-                                                <button onClick={() => { setModelType('gemma'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'gemma' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <GemmaIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'gemma'} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Gemma 4</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.freeGemmaDesc}</div></div>
-                                                </button>
-                                                <button onClick={() => { setModelType('pro'); setIsModelMenuOpen(false); }} className={`flex items-start gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] text-left transition-colors ${modelType === 'pro' ? 'bg-[var(--hover-bg)]' : ''}`}>
-                                                    <MetaIcon className={`w-5 h-5 mt-0.5`} active={modelType === 'pro'} />
-                                                    <div><div className="text-sm font-medium text-[var(--text-primary)]">Llama 3.3</div><div className="text-xs text-[var(--text-secondary)] mt-1">{t.freeLlamaDesc}</div></div>
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
                                 )}
                             </div>
                             <div className="flex items-center gap-4">
                                 {!safeMode && (
-                                    <a href="https://openrouter.ai" target="_blank" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" title={t.officialSite}>
+                                    <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
                                         <span className="text-sm font-medium">{t.officialSite}</span>
                                         <Icon name="external-link" className="w-4 h-4" />
                                     </a>
@@ -1172,7 +1133,50 @@
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto px-4 pt-20 pb-32 scrollbar-hide" ref={chatContainerRef} onScroll={handleChatScroll}>
+                        {/* единый список моделей */}
+                        {isModelMenuOpen && !safeMode && (
+                            <>
+                                <div className="fixed inset-0 z-[55]" onClick={() => setIsModelMenuOpen(false)}></div>
+                                <div className="absolute top-[60px] left-4 right-4 md:right-auto md:w-[380px] bg-[var(--tool-menu-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl p-2 z-[56] animate-slide-up max-h-[70vh] overflow-y-auto scrollbar-slim">
+                                    <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-[var(--text-secondary)] font-bold">{t.modelsLabel}</div>
+                                    {models.map(m => (
+                                        <div key={m.id}>
+                                            <button onClick={() => { setModelId(m.id); setIsModelMenuOpen(false); }}
+                                                className={`flex items-start gap-3 w-full p-3 rounded-lg text-left transition-colors hover:bg-[var(--hover-bg)] ${m.id === modelId ? 'bg-[var(--hover-bg)]' : ''}`}>
+                                                <ModelIcon icon={m.icon} theme={theme} className="w-5 h-5 mt-0.5" active={m.id === modelId} />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="text-sm font-medium text-[var(--text-primary)]">{m.name}</span>
+                                                        {m.free && <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400">{t.free}</span>}
+                                                        {m.supportsTools === false && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--cost-bg)] text-[var(--text-secondary)]">{t.noTools}</span>}
+                                                        {m.reasoning && <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--cost-bg)] text-[var(--text-secondary)] font-mono">reasoning</span>}
+                                                    </div>
+                                                    {m.description && <div className="text-xs text-[var(--text-secondary)] mt-1 leading-snug">{m.description}</div>}
+                                                    <div className="text-[10px] text-[var(--text-secondary)] opacity-50 font-mono mt-1 truncate">{m.id}</div>
+                                                </div>
+                                                {m.id === modelId && <Icon name="check" className="w-4 h-4 text-[var(--accent-blue)] mt-1" />}
+                                            </button>
+                                            {m.id === modelId && m.reasoning && (m.reasoningOptions || []).length > 1 && (
+                                                <div className="px-3 pb-3 -mt-1">
+                                                    <div className="text-[10px] text-[var(--text-secondary)] mb-1.5">{t.effort}</div>
+                                                    <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-lg border border-[var(--border-color)]">
+                                                        {m.reasoningOptions.map(opt => (
+                                                            <button key={opt} onClick={() => setReasoningEffort(opt)}
+                                                                className={`flex-1 py-1.5 rounded-md text-xs transition-all ${effectiveEffort === opt ? 'bg-[var(--bg-body)] text-[var(--text-primary)] font-medium shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]'}`}>
+                                                                {opt === 'high' ? t.effortHigh : (opt === 'medium' ? t.effortMedium : opt)}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {/* чат */}
+                        <div className="flex-1 overflow-y-auto px-4 pt-20 pb-36 scrollbar-hide" ref={chatContainerRef} onScroll={handleChatScroll}>
                             <div className="max-w-[700px] mx-auto">
                                 {!isChatsLoaded ? (
                                     <div className="flex justify-center mt-20 text-[var(--text-secondary)]">...</div>
@@ -1191,141 +1195,215 @@
                                         )}
                                     </div>
                                 ) : (
-                                    activeChat?.messages.map((msg) => {
-                                        let MsgIconProvider = msg.provider || provider;
-                                        if (msg.provider === 'free') {
-                                            if (msg.modelType === 'gemma') MsgIconProvider = 'gemma';
-                                            else if (msg.modelType === 'pro') MsgIconProvider = 'meta';
-                                            else MsgIconProvider = 'router';
-                                        }
-                                        return (
-                                            <div key={msg.id} className="mb-8 animate-slide-up">
-                                                {msg.role === 'user' && (
-                                                    <div className="flex flex-col items-end mb-2">
-                                                        {msg.attachments && msg.attachments.length > 0 && (
-                                                            <div className="flex flex-wrap gap-2 justify-end mb-2 max-w-[80%]">
-                                                                {msg.attachments.map((att, i) => (<img key={i} src={att.base64} className="max-w-[200px] max-h-[200px] object-cover rounded-2xl border border-[var(--border-color)] shadow-sm" alt="User upload" />))}
-                                                            </div>
-                                                        )}
-                                                        {msg.text && (
-                                                            <div className="bg-[var(--bg-user-msg)] text-[var(--text-primary)] rounded-[20px] rounded-br-[4px] px-5 py-3 max-w-[80%]">
-                                                                <div className="whitespace-pre-wrap break-words">{msg.text}</div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {msg.role === 'model' && (
-                                                    <div className="flex gap-4 group">
-                                                        {!safeMode && (
-                                                            <div className="w-8 h-8 rounded-full flex-shrink-0 mt-1 flex items-center justify-center bg-[var(--bg-sidebar)]">
-                                                                <ProviderIcon provider={MsgIconProvider} theme={theme} className={`w-5 h-5`} />
-                                                            </div>
-                                                        )}
-                                                        <div className={`flex-1 overflow-visible relative ${msg.isError ? 'text-red-400' : 'text-[var(--text-primary)]'}`}>
-                                                            {!safeMode && MsgIconProvider === 'router' && msg.actualModel && (
-                                                                <div className="text-[10px] text-[var(--text-secondary)] mb-1 opacity-60 font-mono tracking-wide">{msg.actualModel}</div>
-                                                            )}
-                                                            {msg.isThinking ? (
-                                                                <div className="flex items-center gap-1.5 h-7 px-2">
-                                                                    <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-bounce"></div>
-                                                                    <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
-                                                                    <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
-                                                                </div>
-                                                            ) : (
-                                                                <MarkdownRenderer content={msg.text} />
-                                                            )}
-                                                            {!safeMode && !msg.isError && !msg.isThinking && msg.provider !== 'free' && msg.cost > 0 && (
-                                                                <div className="mt-2 flex items-center gap-1.5 w-fit bg-[var(--cost-bg)] border border-[var(--border-color)] px-2 py-0.5 rounded-full transition-opacity duration-200 opacity-0 group-hover:opacity-100">
-                                                                    <Icon name="credit-card" className="w-3 h-3 text-[var(--text-secondary)]" />
-                                                                    <span className="text-[10px] font-mono text-[var(--text-secondary)] leading-none">{`$${msg.cost.toFixed(6)}`}</span>
-                                                                </div>
-                                                            )}
+                                    activeChat?.messages.map((msg) => (
+                                        <div key={msg.id} className="mb-8 animate-slide-up">
+                                            {msg.role === 'user' && (
+                                                <div className="flex flex-col items-end mb-2">
+                                                    {msg.attachments && msg.attachments.length > 0 && (
+                                                        <div className="flex flex-wrap gap-2 justify-end mb-2 max-w-[80%]">
+                                                            {msg.attachments.map((att, i) => (<img key={i} src={att.base64} className="max-w-[200px] max-h-[200px] object-cover rounded-2xl border border-[var(--border-color)]" alt="" />))}
                                                         </div>
+                                                    )}
+                                                    {msg.text && (
+                                                        <div className="bg-[var(--bg-user-msg)] rounded-[20px] rounded-br-[4px] px-5 py-3 max-w-[80%]">
+                                                            <div className="whitespace-pre-wrap break-words">{msg.text}</div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {msg.role === 'model' && (
+                                                <div className="flex gap-4 group">
+                                                    {!safeMode && (
+                                                        <div className="w-8 h-8 rounded-full flex-shrink-0 mt-1 flex items-center justify-center bg-[var(--bg-sidebar)]">
+                                                            <ModelIcon icon={msg.icon} theme={theme} className="w-5 h-5" />
+                                                        </div>
+                                                    )}
+                                                    <div className={`flex-1 min-w-0 relative ${msg.isError ? 'text-red-400' : ''}`}>
+                                                        {!safeMode && (
+                                                            <SearchPanel searches={msg.searches} open={!!msg.searchOpen} t={t}
+                                                                running={(msg.searches || []).some(s => s.status === 'running')}
+                                                                onToggle={() => toggleSearchPanel(activeChatId, msg.id)} />
+                                                        )}
+                                                        {msg.isThinking && !msg.text ? (
+                                                            <div className="flex items-center gap-1.5 h-7 px-2">
+                                                                <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-bounce"></div>
+                                                                <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-bounce" style={{ animationDelay: '.15s' }}></div>
+                                                                <div className="w-2 h-2 bg-[var(--text-secondary)] rounded-full animate-bounce" style={{ animationDelay: '.3s' }}></div>
+                                                            </div>
+                                                        ) : (
+                                                            <MarkdownRenderer content={msg.text} />
+                                                        )}
+                                                        {!safeMode && !msg.isThinking && msg.text && (
+                                                            <MessageActions msg={msg} t={t}
+                                                                onReasoning={() => setReasoningModalMsg(msg)}
+                                                                onCost={() => setCostModalMsg(msg)} />
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                        )
-                                    })
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))
                                 )}
                             </div>
                         </div>
 
+                        {/* композер */}
                         <div className="absolute bottom-0 left-0 right-0 bg-[var(--bg-body)] p-4 pb-6">
                             <div className="max-w-[760px] mx-auto relative">
                                 {attachments.length > 0 && (
                                     <div className="flex gap-3 mb-3 px-2 overflow-x-auto scrollbar-slim">
                                         {attachments.map((att, i) => (
                                             <div key={i} className="relative w-16 h-16 flex-shrink-0 group">
-                                                <img src={att.base64} className="w-full h-full object-cover rounded-xl border border-[var(--border-color)]" alt="attachment" />
-                                                <button onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                                                <img src={att.base64} className="w-full h-full object-cover rounded-xl border border-[var(--border-color)]" alt="" />
+                                                <button onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <Icon name="x" className="w-3 h-3" />
                                                 </button>
                                             </div>
                                         ))}
                                     </div>
                                 )}
-
-                                <div className={`flex items-end gap-2 bg-[var(--bg-input)] rounded-[28px] p-2 pl-4 pb-2 border-none focus-within:shadow-none transition-all`}>
+                                <div className="flex items-end gap-2 bg-[var(--bg-input)] rounded-[28px] p-2 pl-3">
                                     {!safeMode && (
-                                        <button onClick={() => document.getElementById('file-upload').click()} className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)] transition-colors mb-0.5" title={t.attachPhoto}>
-                                            <Icon name="paperclip" className="w-5 h-5" />
-                                        </button>
+                                        <>
+                                            <button onClick={() => document.getElementById('file-upload').click()} className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)] transition-colors mb-0.5" title={t.attachPhoto}>
+                                                <Icon name="paperclip" className="w-5 h-5" />
+                                            </button>
+                                            <button onClick={() => setWebSearch(!webSearch)} disabled={currentModel.supportsTools === false}
+                                                className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full transition-colors mb-0.5 ${currentModel.supportsTools === false ? 'opacity-30 cursor-not-allowed' : (webSearch ? 'text-[var(--accent-blue)] bg-[var(--cost-bg)]' : 'text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]')}`}
+                                                title={`${t.webSearch}: ${webSearch ? 'ON' : 'OFF'} — ${t.webSearchHint}`}>
+                                                <Icon name="globe" className="w-5 h-5" />
+                                            </button>
+                                        </>
                                     )}
                                     <input type="file" id="file-upload" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-                                    <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} onPaste={handlePaste} placeholder={t.inputPlaceholder} className="flex-1 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none resize-none py-2 px-1 min-h-[40px] max-h-[200px]" rows={1} style={{ height: 'auto' }} />
+                                    <textarea ref={textareaRef} value={input} onChange={(e) => setInput(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                                        onPaste={handlePaste} placeholder={t.inputPlaceholder} rows={1}
+                                        className="flex-1 bg-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none resize-none py-2 px-1 min-h-[40px] max-h-[200px]" />
                                     {isGenerating ? (
-                                        <button onClick={handleStopGeneration} className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full mr-1 transition-all text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 mb-0.5" title={t.stop}>
+                                        <button onClick={handleStopGeneration} className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full mr-1 text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 mb-0.5" title={t.stop}>
                                             <div className="w-4 h-4 bg-current rounded-[2px]"></div>
                                         </button>
                                     ) : (
-                                        <button onClick={sendMessage} disabled={!input.trim() && attachments.length === 0} className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full mr-1 transition-all mb-0.5 ${input.trim() || attachments.length > 0 ? 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]' : 'text-[var(--text-secondary)] opacity-50'}`} title={t.send}><Icon name="send-horizontal" className="w-5 h-5" /></button>
+                                        <button onClick={sendMessage} disabled={!input.trim() && attachments.length === 0}
+                                            className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full mr-1 mb-0.5 transition-all ${input.trim() || attachments.length ? 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]' : 'text-[var(--text-secondary)] opacity-50'}`} title={t.send}>
+                                            <Icon name="send-horizontal" className="w-5 h-5" />
+                                        </button>
                                     )}
                                 </div>
                             </div>
                         </div>
 
+                        {/* Модалка размышления */}
+                        {reasoningModalMsg && (
+                            <Modal title={t.reasoningTitle} onClose={() => setReasoningModalMsg(null)}
+                                footer={<button onClick={() => setReasoningModalMsg(null)} className="px-6 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium">{t.close}</button>}>
+                                <div className="space-y-5 text-sm">
+                                    <div>
+                                        <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)] font-bold mb-2">reasoning tokens</div>
+                                        {reasoningModalMsg.reasoning ? (
+                                            <pre className="whitespace-pre-wrap font-mono text-xs bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl p-4 max-h-72 overflow-y-auto scrollbar-slim">{reasoningModalMsg.reasoning}</pre>
+                                        ) : <div className="text-[var(--text-secondary)]">{t.noReasoning}</div>}
+                                    </div>
+                                    <div>
+                                        <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)] font-bold mb-2">{t.searchLog}</div>
+                                        {(reasoningModalMsg.searches || []).length === 0 ? (
+                                            <div className="text-[var(--text-secondary)]">{t.noSearches}</div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {reasoningModalMsg.searches.map((s, i) => (
+                                                    <div key={s.id} className="bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl p-3">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--cost-bg)]">#{i+1}</span>
+                                                            <span className="font-medium">{s.query}</span>
+                                                            <span className="ml-auto text-[10px] font-mono text-[var(--text-secondary)]">{SEARCH_MODEL} · {fmt$(s.cost)}</span>
+                                                        </div>
+                                                        {s.summary && <div className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap max-h-40 overflow-y-auto scrollbar-slim">{s.summary}</div>}
+                                                        {s.error && <div className="text-xs text-red-400">{s.error}</div>}
+                                                        {s.citations && s.citations.length > 0 && (
+                                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                                {s.citations.map((c, k) => (
+                                                                    <a key={k} href={c} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--cost-bg)] border border-[var(--border-color)] hover:text-[var(--accent-blue)]">{k+1}. {hostOf(c)}</a>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </Modal>
+                        )}
+
+                        {/* Модалка стоимости */}
+                        {costModalMsg && (() => {
+                            const main = costModalMsg.cost || 0;
+                            const search = costModalMsg.searchCost || 0;
+                            const total = main + search;
+                            const share = balanceLeft && balanceLeft > 0 ? (total / balanceLeft) * 100 : null;
+                            return (
+                                <Modal title={t.costTitle} onClose={() => setCostModalMsg(null)}
+                                    footer={<button onClick={() => setCostModalMsg(null)} className="px-6 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium">{t.close}</button>}>
+                                    <div className="space-y-3 text-sm">
+                                        <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)]">
+                                            <span className="flex items-center gap-2"><ModelIcon icon={costModalMsg.icon} theme={theme} className="w-4 h-4" />{t.costMain} <span className="text-[10px] font-mono opacity-50">{costModalMsg.actualModel || costModalMsg.modelId}</span></span>
+                                            <span className="font-mono">{fmt$(main)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)]">
+                                            <span className="flex items-center gap-2"><Icon name="globe" className="w-4 h-4 text-[var(--accent-blue)]" />{t.costSearch} <span className="text-[10px] font-mono opacity-50">×{(costModalMsg.searches || []).length}</span></span>
+                                            <span className="font-mono">{fmt$(search)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--cost-bg)] border border-[var(--accent-blue)]">
+                                            <span className="font-medium">{t.costTotal}</span>
+                                            <span className="font-mono font-bold">{fmt$(total)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center px-3 text-xs text-[var(--text-secondary)]">
+                                            <span>{t.costShare}</span>
+                                            <span className="font-mono">{share !== null ? `${share.toFixed(4)}%` : '—'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center px-3 text-xs text-[var(--text-secondary)]">
+                                            <span>{t.balanceLeft}</span>
+                                            <span className="font-mono">{balanceLeft !== null ? fmt$(balanceLeft) : '—'}</span>
+                                        </div>
+                                        {total === 0 && <div className="text-xs text-[var(--text-secondary)] px-3">{t.costPending}</div>}
+                                    </div>
+                                </Modal>
+                            );
+                        })()}
+
+                        {/* Настройки */}
                         {isSettingsOpen && (
-                            <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 sm:p-6" onClick={() => setIsSettingsOpen(false)}>
+                            <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4" onClick={() => setIsSettingsOpen(false)}>
                                 <div className="bg-[var(--bg-surface)] rounded-2xl w-full max-w-lg border border-[var(--border-color)] shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                                    <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-surface)] rounded-t-2xl z-10">
+                                    <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
                                         <h2 className="text-xl font-bold">{t.settings}</h2>
-                                        <button onClick={() => setIsSettingsOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 rounded-full hover:bg-[var(--hover-bg)] transition-colors"><Icon name="x" className="w-5 h-5" /></button>
+                                        <button onClick={() => setIsSettingsOpen(false)} className="p-1 rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)]"><Icon name="x" className="w-5 h-5" /></button>
                                     </div>
                                     <div className="p-6 overflow-y-auto space-y-8 scrollbar-slim">
                                         <div className="space-y-4">
                                             <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsAI}</h3>
-                                            <button onClick={openMemoryModal} className="w-full flex items-center gap-4 p-4 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] rounded-xl transition-all text-left border border-[var(--border-color)] group">
-                                                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl transition-colors" style={{ background: 'color-mix(in srgb, var(--accent-blue) 15%, transparent)' }}>
-                                                    <BotIcon className="w-5 h-5" />
-                                                </div>
+                                            <button onClick={openMemoryModal} className="w-full flex items-center gap-4 p-4 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] rounded-xl text-left border border-[var(--border-color)]">
+                                                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl" style={{ background: 'color-mix(in srgb, var(--accent-blue) 15%, transparent)' }}><BotIcon className="w-5 h-5" /></div>
                                                 <div className="flex-1">
-                                                    <div className="font-medium text-[var(--text-primary)]">{t.systemInstructions}</div>
+                                                    <div className="font-medium">{t.systemInstructions}</div>
                                                     <div className="text-xs text-[var(--text-secondary)] mt-0.5">{t.sysInstDescription}</div>
                                                 </div>
-                                                <div className="flex-shrink-0"><Icon name="chevron-right" className="w-4 h-4 text-[var(--text-secondary)]" /></div>
+                                                <Icon name="chevron-right" className="w-4 h-4 text-[var(--text-secondary)]" />
                                             </button>
-                                            <div>
-                                                <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.provider}</label>
-                                                <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
-                                                    <button onClick={() => setTempProvider('gemini')} className={`flex items-center justify-center py-2 flex-1 rounded-lg transition-all ${tempProvider === 'gemini' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)]' : 'opacity-50 hover:opacity-100 hover:bg-[var(--hover-bg)]'}`} title="Gemini">
-                                                        <ProviderIcon provider="gemini" theme={tempTheme} className="w-5 h-5" active={tempProvider === 'gemini'} />
-                                                    </button>
-                                                    <button onClick={() => setTempProvider('chatgpt')} className={`flex items-center justify-center py-2 flex-1 rounded-lg transition-all ${tempProvider === 'chatgpt' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)]' : 'opacity-50 hover:opacity-100 hover:bg-[var(--hover-bg)]'}`} title="ChatGPT">
-                                                        <ProviderIcon provider="chatgpt" theme={tempTheme} className="w-5 h-5" active={tempProvider === 'chatgpt'} />
-                                                    </button>
-                                                    <button onClick={() => setTempProvider('deepseek')} className={`flex items-center justify-center py-2 flex-1 rounded-lg transition-all ${tempProvider === 'deepseek' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)]' : 'opacity-50 hover:opacity-100 hover:bg-[var(--hover-bg)]'}`} title="DeepSeek">
-                                                        <ProviderIcon provider="deepseek" theme={tempTheme} className="w-5 h-5" active={tempProvider === 'deepseek'} />
-                                                    </button>
-                                                    <button onClick={() => setTempProvider('free')} className={`flex items-center justify-center py-2 flex-1 rounded-lg transition-all ${tempProvider === 'free' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)]' : 'opacity-50 hover:opacity-100 hover:bg-[var(--hover-bg)]'}`} title={t.freeModelsLabel}>
-                                                        <ProviderIcon provider="free" theme={tempTheme} className="w-5 h-5" active={tempProvider === 'free'} />
-                                                    </button>
+                                            <div className="flex items-center gap-4 p-4 bg-[var(--bg-input)] rounded-xl border border-[var(--border-color)]">
+                                                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--cost-bg)]"><Icon name="globe" className="w-5 h-5 text-[var(--accent-blue)]" /></div>
+                                                <div className="flex-1">
+                                                    <div className="font-medium">{t.webSearch}</div>
+                                                    <div className="text-xs text-[var(--text-secondary)] mt-0.5">{t.webSearchHint}</div>
                                                 </div>
-                                                <div className="text-xs text-[var(--text-secondary)] mt-3 leading-relaxed bg-[var(--bg-input)] p-3 rounded-lg border border-[var(--border-color)]">
-                                                    {tempProvider === 'gemini' && t.descGemini}
-                                                    {tempProvider === 'chatgpt' && t.descChatGPT}
-                                                    {tempProvider === 'deepseek' && t.descDeepSeek}
-                                                    {tempProvider === 'free' && t.descFree}
-                                                </div>
+                                                <button onClick={() => setWebSearch(!webSearch)} className={`w-12 h-6 rounded-full transition-colors relative ${webSearch ? 'bg-[var(--accent-blue)]' : 'bg-[var(--border-color)]'}`}>
+                                                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${webSearch ? 'left-6' : 'left-0.5'}`}></span>
+                                                </button>
+                                            </div>
+                                            <div className="text-xs text-[var(--text-secondary)] bg-[var(--bg-input)] p-3 rounded-lg border border-[var(--border-color)]">
+                                                {t.modelsLabel}: <b>{currentModel.name}</b> · <span className="font-mono">{currentModel.id}</span><br />
+                                                <span className="opacity-60">{models.length} моделей синхронизировано через /api/models</span>
                                             </div>
                                         </div>
 
@@ -1335,23 +1413,23 @@
                                             <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsAppearance}</h3>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.theme}</label>
+                                                    <label className="block text-sm mb-2 font-medium">{t.theme}</label>
                                                     <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
-                                                        <button onClick={() => setTempTheme('light')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempTheme === 'light' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>Light</button>
-                                                        <button onClick={() => setTempTheme('dark')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempTheme === 'dark' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>Dark</button>
+                                                        <button onClick={() => setTempTheme('light')} className={`flex-1 py-2 rounded-lg text-sm ${tempTheme === 'light' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Light</button>
+                                                        <button onClick={() => setTempTheme('dark')} className={`flex-1 py-2 rounded-lg text-sm ${tempTheme === 'dark' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Dark</button>
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.language}</label>
+                                                    <label className="block text-sm mb-2 font-medium">{t.language}</label>
                                                     <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
-                                                        <button onClick={() => setTempLanguage('ru')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempLanguage === 'ru' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>Русский</button>
-                                                        <button onClick={() => setTempLanguage('da')} className={`flex-1 py-2 rounded-lg text-sm transition-all ${tempLanguage === 'da' ? 'bg-[var(--bg-body)] shadow-sm text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>Dansk</button>
+                                                        <button onClick={() => setTempLanguage('ru')} className={`flex-1 py-2 rounded-lg text-sm ${tempLanguage === 'ru' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Русский</button>
+                                                        <button onClick={() => setTempLanguage('da')} className={`flex-1 py-2 rounded-lg text-sm ${tempLanguage === 'da' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Dansk</button>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.tabTitleSetting}</label>
-                                                <input type="text" value={tempTabTitle} onChange={e => setTempTabTitle(e.target.value)} placeholder={t.tabTitlePlaceholder} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-sm transition-colors" />
+                                                <label className="block text-sm mb-2 font-medium">{t.tabTitleSetting}</label>
+                                                <input type="text" value={tempTabTitle} onChange={e => setTempTabTitle(e.target.value)} placeholder={t.tabTitlePlaceholder} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] text-sm" />
                                             </div>
                                         </div>
 
@@ -1360,50 +1438,45 @@
                                         <div className="space-y-4">
                                             <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsData}</h3>
                                             <div>
-                                                <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.yourName}</label>
-                                                <input type="text" value={tempNickname} onChange={e => setTempNickname(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-sm transition-colors" />
+                                                <label className="block text-sm mb-2 font-medium">{t.yourName}</label>
+                                                <input type="text" value={tempNickname} onChange={e => setTempNickname(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] text-sm" />
                                             </div>
                                             <div>
-                                                <label className="block text-sm mb-2 text-[var(--text-primary)] font-medium">{t.apiKey}</label>
-                                                <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] font-mono text-sm transition-colors" />
+                                                <label className="block text-sm mb-2 font-medium">{t.apiKey}</label>
+                                                <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] font-mono text-sm" />
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="p-6 border-t border-[var(--border-color)] flex justify-between items-center gap-4 bg-[var(--bg-surface)] rounded-b-2xl z-10">
-                                        <button onClick={clearAllHistory} className="px-5 py-2.5 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-full text-sm font-medium transition-colors">{t.clearHistory}</button>
-                                        <button onClick={saveSettings} className="px-8 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium hover:opacity-90 transition-opacity ml-auto">{t.save}</button>
+                                    <div className="p-6 border-t border-[var(--border-color)] flex justify-between items-center gap-4">
+                                        <button onClick={clearAllHistory} className="px-5 py-2.5 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-full text-sm font-medium">{t.clearHistory}</button>
+                                        <button onClick={saveSettings} className="px-8 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium ml-auto">{t.save}</button>
                                     </div>
                                 </div>
                             </div>
                         )}
 
                         {isMemoryModalOpen && (
-                            <div className="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-4" onClick={() => setIsMemoryModalOpen(false)}>
-                                <div className="bg-[var(--bg-surface)] p-0 rounded-2xl w-full max-w-2xl border border-[var(--border-color)] shadow-2xl flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
-                                    <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
-                                        <h2 className="text-xl font-bold">{t.systemInstructions}</h2>
-                                        <button onClick={() => setIsMemoryModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 rounded-full hover:bg-[var(--hover-bg)] transition-colors"><Icon name="x" className="w-5 h-5" /></button>
-                                    </div>
-                                    <div className="p-6 flex-1 overflow-y-auto">
-                                        <textarea value={tempSystemInstruction} onChange={e => setTempSystemInstruction(e.target.value)} placeholder={t.sysInstPlaceholder} className="w-full h-64 p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] resize-none leading-relaxed" autoFocus />
-                                        <p className="mt-4 text-sm text-[var(--text-secondary)]">{t.sysInstDescription}</p>
-                                    </div>
-                                    <div className="p-6 border-t border-[var(--border-color)] flex justify-end gap-3">
-                                        <button onClick={() => setIsMemoryModalOpen(false)} className="px-6 py-2.5 text-[var(--text-primary)] hover:bg-[var(--hover-bg)] rounded-full transition-colors font-medium">{t.cancel}</button>
-                                        <button onClick={saveMemory} className="px-8 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium hover:opacity-90 transition-opacity">{t.save}</button>
-                                    </div>
-                                </div>
-                            </div>
+                            <Modal title={t.systemInstructions} onClose={() => setIsMemoryModalOpen(false)}
+                                footer={<>
+                                    <button onClick={() => setIsMemoryModalOpen(false)} className="px-6 py-2.5 hover:bg-[var(--hover-bg)] rounded-full font-medium">{t.cancel}</button>
+                                    <button onClick={saveMemory} className="px-8 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium">{t.save}</button>
+                                </>}>
+                                <textarea value={tempSystemInstruction} onChange={e => setTempSystemInstruction(e.target.value)} placeholder={t.sysInstPlaceholder}
+                                    className="w-full h-64 p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] resize-none leading-relaxed" autoFocus />
+                                <p className="mt-4 text-sm text-[var(--text-secondary)]">{t.sysInstDescription}</p>
+                            </Modal>
                         )}
 
                         {isWelcomeModalOpen && (
                             <div className="fixed inset-0 bg-black/90 z-[150] flex items-center justify-center p-4">
-                                <div className="bg-[var(--bg-surface)] p-8 rounded-3xl w-full max-w-md border border-[var(--border-color)] shadow-2xl text-center">
-                                    <div className="mb-6"><GeminiIcon className="w-14 h-14 mx-auto animate-pulse" active={true} /></div>
+                                <div className="bg-[var(--bg-surface)] p-8 rounded-3xl w-full max-w-md border border-[var(--border-color)] text-center">
+                                    <div className="mb-6"><GeminiIcon className="w-14 h-14 mx-auto animate-pulse" /></div>
                                     <h2 className="text-2xl font-bold mb-2">{t.welcome}</h2>
                                     <p className="text-[var(--text-secondary)] mb-8">{t.askName}</p>
-                                    <input type="text" value={nickname} onChange={e => setNickname(e.target.value)} placeholder={t.namePlaceholder} className="w-full p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)] text-center text-lg mb-6 transition-colors" onKeyDown={e => e.key === 'Enter' && saveNickname(nickname)} />
-                                    <button onClick={() => saveNickname(nickname)} className="w-full py-4 bg-[var(--accent-blue)] text-[#000] rounded-xl font-bold hover:opacity-90 transition-opacity">{t.startChat}</button>
+                                    <input type="text" value={nickname} onChange={e => setNickname(e.target.value)} placeholder={t.namePlaceholder}
+                                        className="w-full p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] text-center text-lg mb-6"
+                                        onKeyDown={e => e.key === 'Enter' && saveNickname(nickname)} />
+                                    <button onClick={() => saveNickname(nickname)} className="w-full py-4 bg-[var(--accent-blue)] text-[#000] rounded-xl font-bold">{t.startChat}</button>
                                 </div>
                             </div>
                         )}
