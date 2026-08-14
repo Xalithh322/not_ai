@@ -99,6 +99,60 @@
         ::-webkit-scrollbar-thumb:hover { background: #5e5e5e; }
         .scrollbar-slim::-webkit-scrollbar { width: 4px; }
     </style>
+<!-- Автоматический перенос данных со старого домена -->
+<script>
+  (function autoMigrate() {
+    if (localStorage.getItem('gemini_auto_migrated')) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.src = 'https://not0ai.xalithh.workers.dev/migration-bridge';
+    iframe.style.display = 'none';
+
+    window.addEventListener('message', async (e) => {
+      if (e.data && e.data.type === 'NOT_AI_MIGRATION_DATA') {
+        const backup = e.data;
+        let updated = false;
+
+        if (backup.localStorage) {
+          Object.keys(backup.localStorage).forEach(k => {
+            if (!localStorage.getItem(k)) {
+              localStorage.setItem(k, backup.localStorage[k]);
+              updated = true;
+            }
+          });
+        }
+
+        if (backup.chats && Array.isArray(backup.chats) && backup.chats.length > 0) {
+          try {
+            await new Promise((resolve) => {
+              const req = indexedDB.open('GeminiChatDB', 1);
+              req.onupgradeneeded = (evt) => {
+                const db = evt.target.result;
+                if (!db.objectStoreNames.contains('chats')) {
+                  db.createObjectStore('chats', { keyPath: 'id' });
+                }
+              };
+              req.onsuccess = (evt) => {
+                const db = evt.target.result;
+                const tx = db.transaction('chats', 'readwrite');
+                tx.objectStore('chats').put({ id: 'all_chats', data: backup.chats });
+                tx.oncomplete = () => resolve();
+              };
+            });
+            updated = true;
+          } catch(err) { console.error(err); }
+        }
+
+        localStorage.setItem('gemini_auto_migrated', 'true');
+        if (updated) {
+          window.location.reload();
+        }
+      }
+    });
+
+    document.head.appendChild(iframe);
+  })();
+</script>
 </head>
 <body>
     <div id="root"></div>
@@ -110,7 +164,7 @@
 
         // ИСПРАВЛЕНО: базовый URL API. Используем абсолютный адрес OpenRouter.
         // Если у вас есть свой прокси, замените на "/api".
-        const API_BASE = "https://not0ai.xalithh.workers.dev/api";
+        const API_BASE = "/api";
 
         const safeStorage = {
             getItem: (key) => { try { return localStorage.getItem(key); } catch (e) { console.warn("Storage blocked:", e); return null; } },
@@ -765,7 +819,7 @@
                     let modelName = "";
                     if (currentProvider === 'gemini') {
                         if (currentModelType === 'pro') modelName = 'google/gemini-3.1-pro-preview';
-                        else if (currentModelType === 'flash3.5') modelName = 'google/gemini-3.5-flash';
+                        else if (currentModelType === 'flash3.5') modelName = 'google/gemini-3.7-flash';
                         else modelName = 'google/gemini-3-flash-preview';
                     } else if (currentProvider === 'chatgpt') {
                         modelName = currentModelType === 'pro' ? 'openai/o4-mini' : 'openai/gpt-5.4-mini';
