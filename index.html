@@ -130,6 +130,7 @@
         const normalizeModel = (m) => {
             const id = String(m.id || '').trim();
             const effort = m.reasoning && typeof m.reasoning === 'object' ? String(m.reasoning.effort || '') : '';
+            const temp = (m.temperature === null || m.temperature === undefined || m.temperature === '') ? null : Number(m.temperature);
             return {
                 id,
                 name: String(m.name || id),
@@ -139,6 +140,7 @@
                 free: !!m.free,
                 supportsTools: m.supportsTools !== false,
                 maxTokens: Number(m.maxTokens) > 0 ? Number(m.maxTokens) : 8192,
+                temperature: (temp !== null && isFinite(temp) && temp >= 0 && temp <= 2) ? temp : null,
                 provider: (m.provider && typeof m.provider === 'object' && Array.isArray(m.provider.order) && m.provider.order.length)
                     ? { order: m.provider.order.map(String), allow_fallbacks: m.provider.allow_fallbacks !== false } : null,
                 reasoning: effort ? { effort } : null,
@@ -884,6 +886,7 @@
                         stream: true,
                         usage: { include: true }
                     };
+                    if (model.temperature !== null && model.temperature !== undefined) body.temperature = model.temperature;
                     if (model.provider) body.provider = model.provider;
                     if (model.reasoning && effectiveEffort) body.reasoning = { effort: effectiveEffort };
                     if (allowTools) { body.tools = [SEARCH_TOOL]; body.tool_choice = 'auto'; }
