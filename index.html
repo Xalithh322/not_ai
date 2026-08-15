@@ -284,6 +284,7 @@
                 searchingWeb:'Ищу в интернете', searchedWeb:'Веб-поиск', sources:'Источники',
                 searchLimitNote:'Достигнут лимит поисковых запросов (2).', searchError:'Ошибка поиска',
                 modelsLabel:'Модель', effort:'Глубина рассуждения', effortMedium:'Средняя', effortHigh:'Высокая',
+                effortLabels:{ none:'Выкл.', minimal:'Мин.', low:'Низкая', medium:'Средняя', high:'Высокая', xhigh:'Макс.' },
                 copyText:'Скопировать текст', copied:'Скопировано', viewReasoning:'Посмотреть размышление',
                 viewCost:'Посмотреть стоимость', reasoningTitle:'Размышление модели', noReasoning:'Модель не вернула reasoning-токены.',
                 searchLog:'Лог поисковых вызовов', noSearches:'Поиск не использовался.',
@@ -310,6 +311,7 @@
                 searchingWeb:'Søger på nettet', searchedWeb:'Websøgning', sources:'Kilder',
                 searchLimitNote:'Grænsen for søgninger er nået (2).', searchError:'Søgefejl',
                 modelsLabel:'Model', effort:'Tænkedybde', effortMedium:'Mellem', effortHigh:'Høj',
+                effortLabels:{ none:'Fra', minimal:'Min.', low:'Lav', medium:'Mellem', high:'Høj', xhigh:'Maks.' },
                 copyText:'Kopier tekst', copied:'Kopieret', viewReasoning:'Se tænkning',
                 viewCost:'Se pris', reasoningTitle:'Modellens tænkning', noReasoning:'Modellen returnerede ingen reasoning-tokens.',
                 searchLog:'Log over søgekald', noSearches:'Søgning blev ikke brugt.',
@@ -532,8 +534,10 @@
             const effectiveEffort = useMemo(() => {
                 if (!currentModel.reasoning) return null;
                 const opts = currentModel.reasoningOptions || [];
-                if (opts.length) return opts.includes(reasoningEffort) ? reasoningEffort : opts[0];
-                return currentModel.reasoning.effort;
+                const def = currentModel.reasoning.effort;
+                if (!opts.length) return def;
+                if (opts.includes(reasoningEffort)) return reasoningEffort;   // выбор пользователя
+                return opts.includes(def) ? def : opts[0];                    // иначе дефолт из админки
             }, [currentModel, reasoningEffort]);
 
             /* ---- синхронизация списка моделей ---- */
@@ -1139,12 +1143,12 @@
                                                     {isActive && <Icon name="check" className="w-4 h-4 text-[var(--accent-blue)] mt-0.5 flex-shrink-0" />}
                                                 </button>
                                                 {showEfforts && (
-                                                    <div className="flex flex-col gap-0.5 p-1 mr-2 rounded-lg bg-[var(--bg-sidebar)] border border-[var(--border-color)] flex-shrink-0"
+                                                    <div className={`gap-0.5 p-1 mr-2 rounded-lg bg-[var(--bg-sidebar)] border border-[var(--border-color)] flex-shrink-0 ${efforts.length > 3 ? 'grid grid-cols-2' : 'flex flex-col'}`}
                                                         title={t.effort}>
                                                         {efforts.map(opt => (
                                                             <button key={opt} onClick={() => setReasoningEffort(opt)}
                                                                 className={`px-2.5 py-1 rounded-md text-[11px] leading-tight whitespace-nowrap transition-all ${effectiveEffort === opt ? 'bg-[var(--bg-body)] text-[var(--text-primary)] font-medium shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]'}`}>
-                                                                {opt === 'high' ? t.effortHigh : (opt === 'medium' ? t.effortMedium : opt)}
+                                                                {(t.effortLabels && t.effortLabels[opt]) || opt}
                                                             </button>
                                                         ))}
                                                     </div>
