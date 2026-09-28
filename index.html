@@ -50,6 +50,106 @@
         ::-webkit-scrollbar-thumb { background: #444746; border-radius: 4px; }
         .scrollbar-slim::-webkit-scrollbar { width: 4px; }
         .scrollbar-hide::-webkit-scrollbar { width: 6px; }
+
+        /* ================= обёртка «Википедия» (режим скрытности) ================= */
+        .wk {
+            --wk-bg:#fff; --wk-fg:#202122; --wk-mut:#54595d; --wk-bd:#a2a9b1; --wk-bd2:#eaecf0;
+            --wk-link:#3366cc; --wk-btn:#f8f9fa; --wk-hover:#eaecf0;
+            position:fixed; inset:0; overflow-y:auto; background:var(--wk-bg); color:var(--wk-fg);
+            font-family:-apple-system,"Segoe UI",Roboto,Arial,Helvetica,sans-serif;
+            font-size:14px; line-height:1.6; z-index:40;
+        }
+        .wk.dark {
+            --wk-bg:#101418; --wk-fg:#eaecf0; --wk-mut:#a2a9b1; --wk-bd:#54595d; --wk-bd2:#27292d;
+            --wk-link:#88a9f3; --wk-btn:#27292d; --wk-hover:#27292d;
+        }
+        .wk *, .wk *::before, .wk *::after { box-sizing:border-box; }
+        .wk ::selection { background:#b6d4fe; }
+
+        .wk-head { display:flex; align-items:center; gap:14px; padding:6px 14px 6px 8px; background:var(--wk-bg);
+            border-bottom:1px solid var(--wk-bd2); position:sticky; top:0; z-index:6; }
+        .wk-burger { width:34px; height:34px; flex:0 0 34px; border:0; background:none; cursor:pointer;
+            border-radius:2px; color:var(--wk-fg); display:flex; align-items:center; justify-content:center; }
+        .wk-burger:hover { background:var(--wk-hover); }
+        .wk-logo { display:flex; flex-direction:column; justify-content:center; margin-right:6px; user-select:none; }
+        .wk-logo .wm { display:flex; align-items:flex-start; gap:2px; }
+        .wk-logo b { font-family:"Linux Libertine","Times New Roman",Georgia,serif; font-size:21px; font-weight:400;
+            letter-spacing:.055em; line-height:1; color:var(--wk-fg); }
+        .wk-logo img { width:17px; height:17px; margin-top:-3px; }
+        .wk-logo span { font-size:8px; color:var(--wk-mut); letter-spacing:.01em; margin-top:4px; white-space:nowrap; }
+
+        .wk-search { display:flex; flex:1 1 auto; max-width:480px; }
+        .wk-search .wrap { position:relative; flex:1; }
+        .wk-search .ico { position:absolute; left:9px; top:9px; width:15px; height:15px; opacity:.55; pointer-events:none; }
+        .wk-search input { width:100%; height:33px; padding:0 10px 0 31px; border:1px solid var(--wk-bd);
+            border-radius:2px 0 0 2px; font:inherit; font-size:14px; background:var(--wk-bg); color:var(--wk-fg); }
+        .wk-search input::placeholder { color:var(--wk-mut); }
+        .wk-search input:focus { outline:none; border-color:#36c; box-shadow:inset 0 0 0 1px #36c; }
+        .wk-search button { height:33px; padding:0 13px; margin-left:-1px; border:1px solid var(--wk-bd);
+            border-radius:0 2px 2px 0; background:var(--wk-btn); color:var(--wk-fg); font:inherit; font-weight:600;
+            font-size:14px; cursor:pointer; white-space:nowrap; }
+        .wk-search button:hover { background:var(--wk-hover); }
+
+        .wk-nav { margin-left:auto; display:flex; align-items:center; gap:15px; font-size:14px; white-space:nowrap; }
+        .wk-nav a { color:var(--wk-link); text-decoration:none; cursor:pointer; }
+        .wk-nav a:hover { text-decoration:underline; }
+
+        .wk-body { display:flex; align-items:flex-start; justify-content:center; gap:0; padding:26px 16px 120px; }
+        .wk-toc, .wk-app { width:232px; flex:0 0 232px; position:sticky; top:66px; font-size:14px; }
+        .wk-toc { padding-right:22px; }
+        .wk-app { padding-left:22px; }
+        .wk-main { flex:1 1 auto; max-width:840px; padding:0 34px; min-width:0; }
+        .wk.wk-w-wide .wk-main { max-width:1400px; }
+        .wk-t-small .wk-main { font-size:14px; }
+        .wk-t-standard .wk-main { font-size:15px; }
+        .wk-t-large .wk-main { font-size:17px; }
+
+        .wk-ph { display:flex; align-items:center; gap:8px; padding-bottom:7px; border-bottom:1px solid var(--wk-bd2); margin-bottom:11px; }
+        .wk-ph h3 { margin:0; font-size:14px; font-weight:700; }
+        .wk-hide { border:1px solid var(--wk-bd); background:var(--wk-btn); color:var(--wk-fg); font:inherit; font-size:12px;
+            padding:1px 7px; border-radius:2px; cursor:pointer; }
+        .wk-hide:hover { background:var(--wk-hover); }
+        .wk-show { border:0; background:none; color:var(--wk-link); font:inherit; font-size:13px; cursor:pointer; padding:2px 0; }
+        .wk-show:hover { text-decoration:underline; }
+
+        .wk-toc ul { list-style:none; margin:0; padding:0; }
+        .wk-toc li { margin:0 0 2px; }
+        .wk-toc a { display:block; padding:5px 8px 5px 18px; color:var(--wk-link); text-decoration:none; cursor:pointer;
+            border-radius:2px; position:relative; }
+        .wk-toc a:hover { background:var(--wk-hover); text-decoration:underline; }
+        .wk-toc a.top { color:var(--wk-fg); font-weight:700; }
+        .wk-toc .arw { position:absolute; left:2px; top:6px; font-size:11px; color:var(--wk-mut); }
+
+        .wk-grp { margin-bottom:15px; }
+        .wk-grp > div:first-child { color:var(--wk-mut); font-size:13px; border-bottom:1px solid var(--wk-bd2);
+            padding-bottom:4px; margin-bottom:7px; }
+        .wk-rad { display:flex; align-items:center; gap:8px; padding:4px 2px; cursor:pointer; }
+        .wk-rad input { accent-color:#36c; margin:0; width:14px; height:14px; cursor:pointer; }
+
+        /* реплики: пользовательская строка как абзац статьи, ответ — с отступом */
+        .wk-turn { margin-bottom:46px; }
+        .wk-q { margin:0 0 20px; color:var(--wk-fg); white-space:pre-wrap; word-break:break-word; }
+        .wk-a { padding-left:22px; }
+        .wk-a .markdown-body p:last-child { margin-bottom:0; }
+        .wk-att { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px; }
+        .wk-att img { max-width:190px; max-height:190px; border:1px solid var(--wk-bd2); }
+        .wk-dots span { display:inline-block; width:6px; height:6px; margin-right:4px; border-radius:50%;
+            background:var(--wk-mut); animation:pulseDot 1.1s ease-in-out infinite; }
+        .wk-dots span:nth-child(2) { animation-delay:.15s; }
+        .wk-dots span:nth-child(3) { animation-delay:.3s; }
+        .wk-err { color:#d33; }
+
+        @media (max-width:1200px) { .wk-app { display:none; } }
+        @media (max-width:980px) { .wk-toc { display:none; } .wk-main { padding:0; } .wk-logo span { display:none; } }
+        @media (max-width:640px) { .wk-nav { display:none; } }
+
+        /* выезжающая панель у левого края */
+        .wk-edge { position:fixed; left:0; top:0; width:8px; height:100%; z-index:70; }
+        .wk-panel { position:fixed; left:0; top:0; bottom:0; width:290px; z-index:71; display:flex; flex-direction:column;
+            background:var(--bg-sidebar); color:var(--text-primary); border-right:1px solid var(--border-color);
+            transition:transform .22s ease, opacity .22s ease; box-shadow:0 0 40px rgba(0,0,0,.35);
+            font-family:'Google Sans','Roboto',sans-serif; font-size:14px; }
+        .wk-panel.off { transform:translateX(-100%); opacity:0; pointer-events:none; }
     </style>
 
 <!-- Автоматический перенос данных со старого домена -->
@@ -101,6 +201,7 @@
 
         const APP_VERSION = "v4.0.0";
         const API_BASE = "/api";
+        const WIKI_FAVICON = "https://i.ibb.co/CCv64Bw/image.png";
         const MAX_SEARCHES = 2;
         const SEARCH_MODEL = "perplexity/sonar";
 
@@ -153,6 +254,101 @@
             setItem: (k,v) => { try { localStorage.setItem(k,v); } catch(e){} },
             removeItem: (k) => { try { localStorage.removeItem(k); } catch(e){} }
         };
+
+        /* ---------- учёт расхода по устройствам ----------
+           Каждое устройство получает постоянный id в localStorage. Расход шлётся
+           на воркер и группируется по хэшу API-ключа: один ключ = одна общая полоса баланса. */
+        const DEVICE_ID_KEY = 'device_id_v1';
+        const deviceId = (() => {
+            let v = safeStorage.getItem(DEVICE_ID_KEY);
+            if (!v || !/^[a-f0-9]{12}$/.test(v)) {
+                let hex = '';
+                try {
+                    const b = new Uint8Array(6);
+                    crypto.getRandomValues(b);
+                    hex = Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
+                } catch (e) {
+                    hex = (Date.now().toString(16) + Math.random().toString(16).slice(2)).replace(/[^a-f0-9]/g, '').slice(0, 12);
+                }
+                v = hex.padEnd(12, '0').slice(0, 12);
+                safeStorage.setItem(DEVICE_ID_KEY, v);
+            }
+            return v;
+        })();
+
+        /* автоимя вида «Windows · Chrome · 7f3a» — потом переименовывается в админке */
+        const deviceAutoName = (() => {
+            const ua = navigator.userAgent || '';
+            let os = 'Устройство';
+            if (/Windows/i.test(ua)) os = 'Windows';
+            else if (/Macintosh|Mac OS X/i.test(ua)) os = 'Mac';
+            else if (/Android/i.test(ua)) os = 'Android';
+            else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS';
+            else if (/CrOS/i.test(ua)) os = 'ChromeOS';
+            else if (/Linux/i.test(ua)) os = 'Linux';
+            let br = '';
+            if (/Edg\//.test(ua)) br = 'Edge';
+            else if (/OPR\/|Opera/.test(ua)) br = 'Opera';
+            else if (/YaBrowser/.test(ua)) br = 'Yandex';
+            else if (/Firefox\//.test(ua)) br = 'Firefox';
+            else if (/Chrome\//.test(ua)) br = 'Chrome';
+            else if (/Safari\//.test(ua)) br = 'Safari';
+            return [os, br, deviceId.slice(0, 4)].filter(Boolean).join(' · ');
+        })();
+
+        /* цвета раздаются по позиции в отсортированном списке id — одинаково на всех устройствах */
+        const DEVICE_PALETTE = ['#4285f4', '#ea4335', '#34a853', '#f9a825', '#a142f4', '#00acc1', '#ff7043', '#8bc34a', '#ec407a', '#5c6bc0'];
+        const deviceColorMap = (ids) => {
+            const sorted = [...ids].sort();
+            const map = {};
+            sorted.forEach((id, i) => { map[id] = DEVICE_PALETTE[i % DEVICE_PALETTE.length]; });
+            return map;
+        };
+
+        async function hashApiKey(key) {
+            if (!key) return null;
+            try {
+                const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(key)));
+                return Array.from(new Uint8Array(buf)).slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (e) { return null; }
+        }
+
+        /* накопление и отложенная отправка: одна запись в KV вместо записи на каждое сообщение */
+        const usageReporter = {
+            pending: { cost: 0, requests: 0 },
+            timer: null,
+            keyHash: null,
+            onFlush: null,
+            add(keyHash, cost, requests) {
+                if (!keyHash || !(cost > 0)) return;
+                this.keyHash = keyHash;
+                this.pending.cost += cost;
+                this.pending.requests += requests || 0;
+                clearTimeout(this.timer);
+                this.timer = setTimeout(() => this.flush(), 4000);
+            },
+            async flush() {
+                clearTimeout(this.timer);
+                const keyHash = this.keyHash;
+                const { cost, requests } = this.pending;
+                if (!keyHash || !(cost > 0)) return;
+                this.pending = { cost: 0, requests: 0 };
+                try {
+                    await fetch(`${API_BASE}/usage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ key: keyHash, device: deviceId, name: deviceAutoName,
+                                               cost: Math.round(cost * 1e6) / 1e6, requests })
+                    });
+                    if (this.onFlush) this.onFlush();
+                } catch (e) {
+                    /* не потеряем: вернём в очередь до следующей попытки */
+                    this.pending.cost += cost;
+                    this.pending.requests += requests;
+                }
+            }
+        };
+        window.addEventListener('beforeunload', () => { try { usageReporter.flush(); } catch (e) {} });
 
         const Icon = ({ name, className }) => {
             const spanRef = useRef(null);
@@ -293,7 +489,12 @@
                 costTitle:'Стоимость ответа', costMain:'Основной ответ', costSearch:'Веб-поиск', costTotal:'Итого',
                 costShare:'Доля от остатка баланса', balanceLeft:'Остаток баланса', costPending:'Стоимость уточняется...',
                 visionUnsupported:'⚠️ **Ошибка:** выбранная модель не поддерживает изображения. Отправьте только текст или выберите другую модель.',
-                free:'Бесплатно', noTools:'Без поиска', modelsSynced:'Список моделей обновлён'
+                free:'Бесплатно', noTools:'Без поиска', modelsSynced:'Список моделей обновлён',
+                balanceByDevice:'Расход по устройствам', untracked:'Неучтённое', thisDevice:'это устройство',
+                deviceRequests:'запросов', usedLabel:'Использовано', limitLabel:'Лимит ключа',
+                noDeviceData:'Пока никто не потратил ни цента через этот ключ.',
+                noLimitNote:'У ключа нет лимита — показаны доли расхода между устройствами.',
+                renameHint:'Имена устройств меняются в админке.'
             },
             da: {
                 newChat:'Ny chat', newChatSafe:'Ny note', recent:'Seneste', settings:'Indstillinger',
@@ -320,7 +521,12 @@
                 costTitle:'Svarets pris', costMain:'Hovedsvar', costSearch:'Websøgning', costTotal:'I alt',
                 costShare:'Andel af resterende saldo', balanceLeft:'Resterende saldo', costPending:'Prisen beregnes...',
                 visionUnsupported:'⚠️ **Fejl:** den valgte model understøtter ikke billeder. Send kun tekst eller vælg en anden model.',
-                free:'Gratis', noTools:'Uden søgning', modelsSynced:'Modellisten er opdateret'
+                free:'Gratis', noTools:'Uden søgning', modelsSynced:'Modellisten er opdateret',
+                balanceByDevice:'Forbrug pr. enhed', untracked:'Ikke registreret', thisDevice:'denne enhed',
+                deviceRequests:'forespørgsler', usedLabel:'Brugt', limitLabel:'Nøglens grænse',
+                noDeviceData:'Ingen har brugt noget med denne nøgle endnu.',
+                noLimitNote:'Nøglen har ingen grænse — viser fordelingen mellem enheder.',
+                renameHint:'Enhedsnavne ændres i adminpanelet.'
             }
         };
 
@@ -364,6 +570,13 @@
         let msgCounter = 0;
         const genMsgId = () => `${Date.now()}_${msgCounter++}`;
         const fmt$ = (v) => `$${Number(v || 0).toFixed(6)}`;
+        const plural = (n, one, few, many) => {
+            const a = Math.abs(n) % 100, b = a % 10;
+            if (a > 10 && a < 20) return many;
+            if (b > 1 && b < 5) return few;
+            if (b === 1) return one;
+            return many;
+        };
         const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./,''); } catch { return u; } };
 
         /* ---------- Плашка веб-поиска (Claude-style) ---------- */
@@ -479,8 +692,33 @@
             const [nickname, setNickname] = useState(safeStorage.getItem('gemini_nickname') || '');
             const [tabTitle, setTabTitle] = useState(safeStorage.getItem('gemini_tab_title') || 'not ai');
             const [systemInstruction, setSystemInstruction] = useState(safeStorage.getItem('gemini_system_instruction') || '');
-            const [safeMode, setSafeMode] = useState(false);
+            const [safeMode, setSafeMode] = useState(safeStorage.getItem('safe_mode') === '1');
             const [balanceData, setBalanceData] = useState(null);
+            const [usageDevices, setUsageDevices] = useState([]);
+            const [keyHash, setKeyHash] = useState(null);
+            const [isBalanceOpen, setIsBalanceOpen] = useState(false);
+            const keyHashRef = useRef(null);
+
+            /* «внешний вид» обёртки — те же настройки, что в панели Appearance */
+            const [wikiText, setWikiText] = useState(safeStorage.getItem('wk_text') || 'standard');
+            const [wikiWidth, setWikiWidth] = useState(safeStorage.getItem('wk_width') || 'standard');
+            const [wikiColor, setWikiColor] = useState(safeStorage.getItem('wk_color') || 'light');
+            const [wikiToc, setWikiToc] = useState(safeStorage.getItem('wk_toc') !== '0');
+            const [wikiAppear, setWikiAppear] = useState(safeStorage.getItem('wk_app') !== '0');
+            const [wikiMenu, setWikiMenu] = useState(false);
+            useEffect(() => { safeStorage.setItem('safe_mode', safeMode ? '1' : '0'); }, [safeMode]);
+            const wikiDark = useMemo(() => {
+                if (wikiColor === 'dark') return true;
+                if (wikiColor === 'light') return false;
+                try { return window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { return false; }
+            }, [wikiColor]);
+            useEffect(() => {
+                safeStorage.setItem('wk_text', wikiText);
+                safeStorage.setItem('wk_width', wikiWidth);
+                safeStorage.setItem('wk_color', wikiColor);
+                safeStorage.setItem('wk_toc', wikiToc ? '1' : '0');
+                safeStorage.setItem('wk_app', wikiAppear ? '1' : '0');
+            }, [wikiText, wikiWidth, wikiColor, wikiToc, wikiAppear]);
 
             /* модели из KV */
             const [models, setModels] = useState(() => {
@@ -569,9 +807,9 @@
             useEffect(() => { safeStorage.setItem('app_web_search', webSearch ? '1' : '0'); }, [webSearch]);
 
             useEffect(() => {
-                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.setAttribute('data-theme', safeMode ? (wikiDark ? 'dark' : 'light') : theme);
                 safeStorage.setItem('gemini_theme', theme);
-            }, [theme]);
+            }, [theme, safeMode, wikiDark]);
             useEffect(() => {
                 safeStorage.setItem('gemini_language', language);
                 document.documentElement.lang = language;
@@ -580,7 +818,17 @@
                 const storedNick = safeStorage.getItem('gemini_nickname');
                 if (!storedNick) setIsWelcomeModalOpen(true); else setNickname(storedNick);
             }, []);
-            useEffect(() => { document.title = safeMode ? "Workspace" : (tabTitle || "not ai"); }, [safeMode, tabTitle]);
+            useEffect(() => {
+                const custom = (tabTitle || '').trim();
+                document.title = safeMode ? (custom && custom !== 'not ai' ? custom : 'Wikipedia') : (custom || 'not ai');
+                let link = document.querySelector("link[rel~='icon']");
+                if (!link) {
+                    link = document.createElement('link');
+                    link.rel = 'icon';
+                    document.head.appendChild(link);
+                }
+                link.href = safeMode ? WIKI_FAVICON : 'data:,';
+            }, [safeMode, tabTitle]);
             useEffect(() => {
                 const timer = setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 60);
                 return () => clearTimeout(timer);
@@ -600,6 +848,33 @@
                 } catch (e) { setBalanceData(null); }
             };
             useEffect(() => { fetchBalance(); }, [apiKey]);
+
+            const loadUsage = async (hash) => {
+                const h = hash || keyHashRef.current;
+                if (!h) { setUsageDevices([]); return; }
+                try {
+                    const res = await fetch(`${API_BASE}/usage?key=${h}`, { cache: 'no-store' });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (Array.isArray(data.devices)) setUsageDevices(data.devices);
+                } catch (e) {}
+            };
+            useEffect(() => {
+                let cancelled = false;
+                (async () => {
+                    const h = await hashApiKey(apiKey);
+                    if (cancelled) return;
+                    keyHashRef.current = h;
+                    usageReporter.keyHash = h;
+                    setKeyHash(h);
+                    loadUsage(h);
+                })();
+                return () => { cancelled = true; };
+            }, [apiKey]);
+            useEffect(() => {
+                usageReporter.onFlush = () => loadUsage();
+                return () => { usageReporter.onFlush = null; };
+            }, [keyHash]);
 
             useEffect(() => {
                 const loadChats = async () => {
@@ -746,7 +1021,7 @@
                 } catch (e) {}
             };
 
-            const pollCost = async (genId, chatId, messageId) => {
+            const pollCost = async (genId, chatId, messageId, reqInc) => {
                 let attempt = 0;
                 const check = async () => {
                     if (attempt >= 30) return;
@@ -758,6 +1033,7 @@
                             if (cost !== undefined && cost !== null && cost > 0) {
                                 setChats(prev => prev.map(c => c.id === chatId
                                     ? { ...c, messages: c.messages.map(m => m.id === messageId ? { ...m, cost } : m) } : c));
+                                usageReporter.add(keyHashRef.current, cost, reqInc || 0);
                                 return;
                             }
                         }
@@ -858,7 +1134,10 @@
                     setIsGenerating(false); setIsLoading(false);
                     if (abortControllerRef.current === controller) abortControllerRef.current = null;
                     patch(m => ({ ...m, text: fullText || m.text, reasoning: reasoningAcc, searchOpen: false, isThinking: false }));
-                    if (mainCost === 0 && lastGenId && !model.free) pollCost(lastGenId, currentChatId, modelMsgId);
+                    const spent = mainCost + searchCost;
+                    if (spent > 0) usageReporter.add(keyHashRef.current, spent, 1);
+                    /* стоимость иногда приходит только из /generation — запрос засчитаем там */
+                    if (mainCost === 0 && lastGenId && !model.free) pollCost(lastGenId, currentChatId, modelMsgId, spent > 0 ? 0 : 1);
                     fetchBalance();
                 };
 
@@ -1044,13 +1323,542 @@
                 return Math.max(balanceData.limit - balanceData.usage, 0);
             }, [balanceData]);
 
+            /* полоса баланса, поделённая между устройствами одного ключа */
+            const usageBars = useMemo(() => {
+                const list = (usageDevices || []).filter(d => Number(d.cost) > 0);
+                const tracked = list.reduce((sum, d) => sum + Number(d.cost), 0);
+                const limit = balanceData ? balanceData.limit : 0;
+                const used = balanceData ? balanceData.usage : 0;
+                /* делим на больший из двух: учтённое может обогнать usage из-за округлений */
+                const denom = Math.max(tracked, used, 1e-9);
+                const colors = deviceColorMap(list.map(d => d.device));
+                const fill = limit > 0 ? Math.min((used / limit) * 100, 100) : (tracked > 0 ? 100 : 0);
+                const segs = list.map(d => ({
+                    device: d.device,
+                    name: d.name || ('Устройство ' + String(d.device).slice(0, 4)),
+                    cost: Number(d.cost),
+                    requests: Number(d.requests) || 0,
+                    last: Number(d.last) || 0,
+                    color: colors[d.device],
+                    mine: d.device === deviceId,
+                    share: Number(d.cost) / denom,
+                    width: (Number(d.cost) / denom) * fill
+                }));
+                const untrackedCost = Math.max(used - tracked, 0);
+                return {
+                    segs, tracked, used, limit, fill, untrackedCost,
+                    untrackedShare: untrackedCost / denom,
+                    untrackedWidth: (untrackedCost / denom) * fill,
+                    hasLimit: limit > 0
+                };
+            }, [usageDevices, balanceData]);
+
             const toggleSearchPanel = (chatId, msgId) => setChats(prev => prev.map(c => c.id === chatId
                 ? { ...c, messages: c.messages.map(m => m.id === msgId ? { ...m, searchOpen: !m.searchOpen } : m) } : c));
 
+            const openBalance = () => { setIsBalanceOpen(true); fetchBalance(); loadUsage(); };
+
+            const balanceBar = (
+                <div className="w-full h-1.5 bg-[var(--border-color)] rounded-full overflow-hidden flex">
+                    {usageBars.segs.map(s => (
+                        <div key={s.device} className="h-full transition-all duration-500"
+                            style={{ width: `${s.width}%`, background: s.color }} title={`${s.name} — ${fmt$(s.cost)}`}></div>
+                    ))}
+                    {usageBars.untrackedWidth > 0 && (
+                        <div className="h-full bg-[var(--text-secondary)] opacity-40 transition-all duration-500"
+                            style={{ width: `${usageBars.untrackedWidth}%` }} title={t.untracked}></div>
+                    )}
+                    {usageBars.segs.length === 0 && usageBars.untrackedWidth === 0 && (
+                        <div className="h-full bg-[var(--accent-blue)] transition-all duration-500"
+                            style={{ width: `${balancePercentage}%` }}></div>
+                    )}
+                </div>
+            );
+
+            const balanceBlock = (
+                <div className="mt-4 px-3 flex flex-col gap-2 cursor-pointer hover:opacity-90" onClick={openBalance} title={t.balanceByDevice}>
+                    <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-secondary)]">
+                        <span>{t.balanceLabel}</span>
+                        <span>{balanceData ? `${balancePercentage.toFixed(1)}%` : '...'}</span>
+                    </div>
+                    {balanceBar}
+                    {usageBars.segs.length > 0 && (
+                        <div className="flex flex-wrap gap-x-2.5 gap-y-1 pt-0.5">
+                            {usageBars.segs.slice(0, 4).map(s => (
+                                <span key={s.device} className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
+                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }}></span>
+                                    <span className="truncate max-w-[88px]">{s.name}</span>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+
             /* ---------- RENDER ---------- */
+            const modals = (
+                <>
+                        {/* Модалка размышления */}
+                        {reasoningModalMsg && (
+                            <Modal title={t.reasoningTitle} onClose={() => setReasoningModalMsg(null)}
+                                footer={<button onClick={() => setReasoningModalMsg(null)} className="px-6 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium">{t.close}</button>}>
+                                <div className="space-y-5 text-sm">
+                                    <div>
+                                        <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)] font-bold mb-2">reasoning tokens</div>
+                                        {reasoningModalMsg.reasoning ? (
+                                            <pre className="whitespace-pre-wrap font-mono text-xs bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl p-4 max-h-72 overflow-y-auto scrollbar-slim">{reasoningModalMsg.reasoning}</pre>
+                                        ) : <div className="text-[var(--text-secondary)]">{t.noReasoning}</div>}
+                                    </div>
+                                    <div>
+                                        <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)] font-bold mb-2">{t.searchLog}</div>
+                                        {(reasoningModalMsg.searches || []).length === 0 ? (
+                                            <div className="text-[var(--text-secondary)]">{t.noSearches}</div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {reasoningModalMsg.searches.map((s, i) => (
+                                                    <div key={s.id} className="bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl p-3">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--cost-bg)]">#{i+1}</span>
+                                                            <span className="font-medium">{s.query}</span>
+                                                            <span className="ml-auto text-[10px] font-mono text-[var(--text-secondary)]">{SEARCH_MODEL} · {fmt$(s.cost)}</span>
+                                                        </div>
+                                                        {s.summary && <div className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap max-h-40 overflow-y-auto scrollbar-slim">{s.summary}</div>}
+                                                        {s.error && <div className="text-xs text-red-400">{s.error}</div>}
+                                                        {s.citations && s.citations.length > 0 && (
+                                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                                {s.citations.map((c, k) => (
+                                                                    <a key={k} href={c} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--cost-bg)] border border-[var(--border-color)] hover:text-[var(--accent-blue)]">{k+1}. {hostOf(c)}</a>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </Modal>
+                        )}
+
+                        {/* Модалка стоимости */}
+                        {costModalMsg && (() => {
+                            const main = costModalMsg.cost || 0;
+                            const search = costModalMsg.searchCost || 0;
+                            const total = main + search;
+                            const pct = (v) => total > 0 ? Math.max(2, (v / total) * 100) : 0;
+                            return (
+                                <Modal title={t.costTitle} onClose={() => setCostModalMsg(null)}
+                                    footer={<button onClick={() => setCostModalMsg(null)} className="px-6 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium">{t.close}</button>}>
+                                    <div className="max-w-md mx-auto">
+                                        <div className="rounded-2xl border border-[var(--border-color)] px-6 py-7 text-center"
+                                            style={{ background: 'linear-gradient(160deg, color-mix(in srgb, var(--accent-blue) 14%, transparent), transparent 70%)' }}>
+                                            <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--text-secondary)] mb-2">{t.costTotal}</div>
+                                            <div className="text-[34px] leading-none font-mono font-bold tracking-tight">{fmt$(total)}</div>
+                                            {total === 0 && <div className="text-xs text-[var(--text-secondary)] mt-3">{t.costPending}</div>}
+                                        </div>
+
+                                        <div className="mt-4 rounded-2xl border border-[var(--border-color)] overflow-hidden">
+                                            <div className="flex items-center gap-3.5 p-4 bg-[var(--bg-input)]">
+                                                <div className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center bg-[var(--cost-bg)]">
+                                                    <ModelIcon icon={costModalMsg.icon} theme={theme} className="w-5 h-5" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium">{t.costMain}</div>
+                                                    <div className="text-[11px] font-mono text-[var(--text-secondary)] truncate mt-0.5">{costModalMsg.actualModel || costModalMsg.modelId}</div>
+                                                    <div className="h-1 mt-2 rounded-full bg-[var(--cost-bg)] overflow-hidden">
+                                                        <div className="h-full rounded-full bg-[var(--accent-blue)] transition-all" style={{ width: `${pct(main)}%` }}></div>
+                                                    </div>
+                                                </div>
+                                                <span className="font-mono text-sm self-start pt-0.5">{fmt$(main)}</span>
+                                            </div>
+
+                                            <div className="h-px bg-[var(--border-color)]"></div>
+
+                                            <div className="flex items-center gap-3.5 p-4 bg-[var(--bg-input)]">
+                                                <div className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center bg-[var(--cost-bg)]">
+                                                    <Icon name="globe" className="w-4 h-4 text-[var(--accent-blue)]" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium">{t.costSearch}</div>
+                                                    <div className="text-[11px] font-mono text-[var(--text-secondary)] truncate mt-0.5">{SEARCH_MODEL} · ×{(costModalMsg.searches || []).length}</div>
+                                                    <div className="h-1 mt-2 rounded-full bg-[var(--cost-bg)] overflow-hidden">
+                                                        <div className="h-full rounded-full bg-[var(--text-secondary)] opacity-60 transition-all" style={{ width: `${pct(search)}%` }}></div>
+                                                    </div>
+                                                </div>
+                                                <span className="font-mono text-sm self-start pt-0.5">{fmt$(search)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Modal>
+                            );
+                        })()}
+
+                        {/* Расход по устройствам */}
+                        {isBalanceOpen && (
+                            <Modal title={t.balanceByDevice} onClose={() => setIsBalanceOpen(false)}
+                                footer={<button onClick={() => setIsBalanceOpen(false)} className="px-6 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium">{t.close}</button>}>
+                                <div className="space-y-4 text-sm">
+                                    <div className="w-full h-3 rounded-full overflow-hidden flex bg-[var(--border-color)]">
+                                        {usageBars.segs.map(s => (
+                                            <div key={s.device} style={{ width: `${s.width}%`, background: s.color }} title={s.name}></div>
+                                        ))}
+                                        {usageBars.untrackedWidth > 0 && (
+                                            <div className="bg-[var(--text-secondary)] opacity-40" style={{ width: `${usageBars.untrackedWidth}%` }}></div>
+                                        )}
+                                    </div>
+
+                                    {usageBars.segs.length === 0 ? (
+                                        <div className="text-[var(--text-secondary)] py-6 text-center">{t.noDeviceData}</div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {usageBars.segs.map(s => (
+                                                <div key={s.device} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)]">
+                                                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: s.color }}></span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="font-medium truncate flex items-center gap-2">
+                                                            {s.name}
+                                                            {s.mine && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--cost-bg)] text-[var(--text-secondary)] font-normal flex-shrink-0">{t.thisDevice}</span>}
+                                                        </div>
+                                                        <div className="text-[11px] text-[var(--text-secondary)] font-mono mt-0.5">
+                                                            {s.requests} {activeLang === 'ru' ? plural(s.requests, 'запрос', 'запроса', 'запросов') : t.deviceRequests}{s.last ? ` · ${new Date(s.last).toLocaleDateString()}` : ''}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right flex-shrink-0">
+                                                        <div className="font-mono">{fmt$(s.cost)}</div>
+                                                        <div className="text-[11px] text-[var(--text-secondary)]">{(s.share * 100).toFixed(1)}%</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {usageBars.untrackedCost > 0 && (
+                                                <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] opacity-70">
+                                                    <span className="w-3 h-3 rounded-full flex-shrink-0 bg-[var(--text-secondary)] opacity-50"></span>
+                                                    <div className="flex-1 min-w-0 font-medium">{t.untracked}</div>
+                                                    <div className="text-right flex-shrink-0">
+                                                        <div className="font-mono">{fmt$(usageBars.untrackedCost)}</div>
+                                                        <div className="text-[11px] text-[var(--text-secondary)]">{(usageBars.untrackedShare * 100).toFixed(1)}%</div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div className="pt-1 space-y-1.5 text-xs text-[var(--text-secondary)]">
+                                        <div className="flex justify-between"><span>{t.usedLabel}</span><span className="font-mono">{fmt$(usageBars.used)}</span></div>
+                                        {usageBars.hasLimit && (
+                                            <>
+                                                <div className="flex justify-between"><span>{t.balanceLeft}</span><span className="font-mono">{balanceLeft !== null ? fmt$(balanceLeft) : '—'}</span></div>
+                                                <div className="flex justify-between"><span>{t.limitLabel}</span><span className="font-mono">{fmt$(usageBars.limit)}</span></div>
+                                            </>
+                                        )}
+                                        {!usageBars.hasLimit && <div>{t.noLimitNote}</div>}
+                                        <div className="opacity-70 pt-1">{t.renameHint}</div>
+                                    </div>
+                                </div>
+                            </Modal>
+                        )}
+
+                        {/* Настройки */}
+                        {isSettingsOpen && (
+                            <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4" onClick={() => setIsSettingsOpen(false)}>
+                                <div className="bg-[var(--bg-surface)] rounded-2xl w-full max-w-lg border border-[var(--border-color)] shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                                    <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
+                                        <h2 className="text-xl font-bold">{t.settings}</h2>
+                                        <button onClick={() => setIsSettingsOpen(false)} className="p-1 rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)]"><Icon name="x" className="w-5 h-5" /></button>
+                                    </div>
+                                    <div className="p-6 overflow-y-auto space-y-8 scrollbar-slim">
+                                        {/* Блок «ИИ и поведение» убран: системные инструкции и тумблер веб-поиска.
+                                            Веб-поиск включается только кнопкой глобуса в строке ввода.
+                                            Чтобы вернуть системные инструкции — см. openMemoryModal / isMemoryModalOpen ниже. */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsAppearance}</h3>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm mb-2 font-medium">{t.theme}</label>
+                                                    <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
+                                                        <button onClick={() => setTempTheme('light')} className={`flex-1 py-2 rounded-lg text-sm ${tempTheme === 'light' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Light</button>
+                                                        <button onClick={() => setTempTheme('dark')} className={`flex-1 py-2 rounded-lg text-sm ${tempTheme === 'dark' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Dark</button>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm mb-2 font-medium">{t.language}</label>
+                                                    <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
+                                                        <button onClick={() => setTempLanguage('ru')} className={`flex-1 py-2 rounded-lg text-sm ${tempLanguage === 'ru' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Русский</button>
+                                                        <button onClick={() => setTempLanguage('da')} className={`flex-1 py-2 rounded-lg text-sm ${tempLanguage === 'da' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Dansk</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm mb-2 font-medium">{t.tabTitleSetting}</label>
+                                                <input type="text" value={tempTabTitle} onChange={e => setTempTabTitle(e.target.value)} placeholder={t.tabTitlePlaceholder} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] text-sm" />
+                                            </div>
+                                        </div>
+
+                                        <div className="h-px bg-[var(--border-color)] opacity-50"></div>
+
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsData}</h3>
+                                            <div>
+                                                <label className="block text-sm mb-2 font-medium">{t.yourName}</label>
+                                                <input type="text" value={tempNickname} onChange={e => setTempNickname(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] text-sm" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm mb-2 font-medium">{t.apiKey}</label>
+                                                <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] font-mono text-sm" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="p-6 border-t border-[var(--border-color)] flex justify-between items-center gap-4">
+                                        <button onClick={clearAllHistory} className="px-5 py-2.5 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-full text-sm font-medium">{t.clearHistory}</button>
+                                        <button onClick={saveSettings} className="px-8 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium ml-auto">{t.save}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {isMemoryModalOpen && (
+                            <Modal title={t.systemInstructions} onClose={() => setIsMemoryModalOpen(false)}
+                                footer={<>
+                                    <button onClick={() => setIsMemoryModalOpen(false)} className="px-6 py-2.5 hover:bg-[var(--hover-bg)] rounded-full font-medium">{t.cancel}</button>
+                                    <button onClick={saveMemory} className="px-8 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium">{t.save}</button>
+                                </>}>
+                                <textarea value={tempSystemInstruction} onChange={e => setTempSystemInstruction(e.target.value)} placeholder={t.sysInstPlaceholder}
+                                    className="w-full h-64 p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] resize-none leading-relaxed" autoFocus />
+                                <p className="mt-4 text-sm text-[var(--text-secondary)]">{t.sysInstDescription}</p>
+                            </Modal>
+                        )}
+
+                        {isWelcomeModalOpen && (
+                            <div className="fixed inset-0 bg-black/90 z-[150] flex items-center justify-center p-4">
+                                <div className="bg-[var(--bg-surface)] p-8 rounded-3xl w-full max-w-md border border-[var(--border-color)] text-center">
+                                    <div className="mb-6"><GeminiIcon className="w-14 h-14 mx-auto animate-pulse" /></div>
+                                    <h2 className="text-2xl font-bold mb-2">{t.welcome}</h2>
+                                    <p className="text-[var(--text-secondary)] mb-8">{t.askName}</p>
+                                    <input type="text" value={nickname} onChange={e => setNickname(e.target.value)} placeholder={t.namePlaceholder}
+                                        className="w-full p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] text-center text-lg mb-6"
+                                        onKeyDown={e => e.key === 'Enter' && saveNickname(nickname)} />
+                                    <button onClick={() => saveNickname(nickname)} className="w-full py-4 bg-[var(--accent-blue)] text-[#000] rounded-xl font-bold">{t.startChat}</button>
+                                </div>
+                            </div>
+                        )}
+                </>
+            );
+
+            /* ---------- режим скрытности: страница «Википедии» ---------- */
+            if (safeMode) {
+                const wikiSubmit = (e) => {
+                    if (e) e.preventDefault();
+                    if (isGenerating) { handleStopGeneration(); return; }
+                    sendMessage();
+                };
+                const tocItems = [
+                    ['(Top)', false], ['Life and career', true], ['Scientific career', true], ['Legacy', true],
+                    ['In popular culture', false], ['Awards and honors', false], ['Publications', true],
+                    ['See also', false], ['Footnotes', false], ['Notes', false], ['References', true],
+                    ['Further reading', false], ['External links', false]
+                ];
+                const radio = (group, value, current, setter, label) => (
+                    <label className="wk-rad">
+                        <input type="radio" name={group} checked={current === value} onChange={() => setter(value)} />
+                        <span>{label}</span>
+                    </label>
+                );
+
+                return (
+                    <>
+                        <div className={`wk ${wikiDark ? 'dark' : ''} wk-w-${wikiWidth} wk-t-${wikiText}`}
+                            ref={chatContainerRef} onScroll={handleChatScroll}>
+                            <header className="wk-head">
+                                <button className="wk-burger" onClick={() => setWikiToc(v => !v)} title="Main menu">
+                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path d="M1 3h18v2H1zM1 9h18v2H1zM1 15h18v2H1z" />
+                                    </svg>
+                                </button>
+                                <div className="wk-logo">
+                                    <div className="wm">
+                                        <b>WIKIPEDIA</b>
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/40px-Wikipedia-logo-v2.svg.png"
+                                            alt="" onError={(e) => { e.target.style.display = 'none'; }} />
+                                    </div>
+                                    <span>25 years of the free encyclopedia</span>
+                                </div>
+                                <form className="wk-search" onSubmit={wikiSubmit}>
+                                    <div className="wrap">
+                                        <svg className="ico" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path d="M12.2 13.6a7 7 0 111.4-1.4l5.4 5.4-1.4 1.4-5.4-5.4zM8 13A5 5 0 108 3a5 5 0 000 10z" />
+                                        </svg>
+                                        <input value={input} onChange={(e) => setInput(e.target.value)} onPaste={handlePaste}
+                                            placeholder="Search Wikipedia" autoComplete="off" spellCheck="false" />
+                                    </div>
+                                    <button type="submit">Search</button>
+                                </form>
+                                <nav className="wk-nav">
+                                    <a>Donate</a><a>Create account</a><a>Log in</a>
+                                </nav>
+                            </header>
+
+                            <div className="wk-body">
+                                {wikiToc ? (
+                                    <aside className="wk-toc">
+                                        <div className="wk-ph">
+                                            <h3>Contents</h3>
+                                            <button className="wk-hide" onClick={() => setWikiToc(false)}>hide</button>
+                                        </div>
+                                        <ul>
+                                            {tocItems.map(([label, arrow]) => (
+                                                <li key={label}>
+                                                    <a className={label === '(Top)' ? 'top' : ''}>
+                                                        {arrow && <span className="arw">›</span>}{label}
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </aside>
+                                ) : <aside className="wk-toc"><button className="wk-show" onClick={() => setWikiToc(true)}>Contents</button></aside>}
+
+                                <main className="wk-main">
+                                    {(activeChat?.messages || []).map((msg) => (
+                                        msg.role === 'user' ? (
+                                            <div key={msg.id}>
+                                                {msg.attachments && msg.attachments.length > 0 && (
+                                                    <div className="wk-att">
+                                                        {msg.attachments.map((att, i) => <img key={i} src={att.base64} alt="" />)}
+                                                    </div>
+                                                )}
+                                                {msg.text && <p className="wk-q">{msg.text}</p>}
+                                            </div>
+                                        ) : (
+                                            <div key={msg.id} className="wk-a wk-turn">
+                                                {msg.isThinking && !msg.text ? (
+                                                    <div className="wk-dots"><span></span><span></span><span></span></div>
+                                                ) : (
+                                                    <div className={msg.isError ? 'wk-err' : ''}><MarkdownRenderer content={msg.text} /></div>
+                                                )}
+                                            </div>
+                                        )
+                                    ))}
+                                </main>
+
+                                {wikiAppear ? (
+                                    <aside className="wk-app">
+                                        <div className="wk-ph">
+                                            <h3>Appearance</h3>
+                                            <button className="wk-hide" onClick={() => setWikiAppear(false)}>hide</button>
+                                        </div>
+                                        <div className="wk-grp">
+                                            <div>Text</div>
+                                            {radio('wk-text', 'small', wikiText, setWikiText, 'Small')}
+                                            {radio('wk-text', 'standard', wikiText, setWikiText, 'Standard')}
+                                            {radio('wk-text', 'large', wikiText, setWikiText, 'Large')}
+                                        </div>
+                                        <div className="wk-grp">
+                                            <div>Width</div>
+                                            {radio('wk-width', 'standard', wikiWidth, setWikiWidth, 'Standard')}
+                                            {radio('wk-width', 'wide', wikiWidth, setWikiWidth, 'Wide')}
+                                        </div>
+                                        <div className="wk-grp">
+                                            <div>Color</div>
+                                            {radio('wk-color', 'auto', wikiColor, setWikiColor, 'Automatic')}
+                                            {radio('wk-color', 'light', wikiColor, setWikiColor, 'Light')}
+                                            {radio('wk-color', 'dark', wikiColor, setWikiColor, 'Dark')}
+                                        </div>
+                                    </aside>
+                                ) : <aside className="wk-app"><button className="wk-show" onClick={() => setWikiAppear(true)}>Appearance</button></aside>}
+                            </div>
+                        </div>
+
+                        {/* панель у левого края: модель, чаты, настройки, баланс */}
+                        <div className="wk-edge" onMouseEnter={() => setWikiMenu(true)}></div>
+                        <div className={`wk-panel ${wikiMenu ? '' : 'off'}`}
+                            onMouseEnter={() => setWikiMenu(true)} onMouseLeave={() => setWikiMenu(false)}>
+                            <div className="p-3 pb-2">
+                                <button onClick={createNewChat} className="flex items-center gap-2 px-3 py-2 rounded-full bg-[var(--hover-bg)] text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                                    <Icon name="plus" className="w-4 h-4" /><span>{t.newChat}</span>
+                                </button>
+                            </div>
+                            <div className="px-2 pb-2 max-h-[38vh] overflow-y-auto scrollbar-slim flex-shrink-0">
+                                <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-[var(--text-secondary)] font-bold">{t.modelsLabel}</div>
+                                {models.map(m => {
+                                    const isActive = m.id === modelId;
+                                    const efforts = m.reasoning && Array.isArray(m.reasoningOptions) ? m.reasoningOptions : [];
+                                    const showEfforts = isActive && efforts.length > 1;
+                                    return (
+                                        <div key={m.id} className={`flex items-center gap-1 rounded-lg transition-colors ${isActive ? 'bg-[var(--hover-bg)]' : 'hover:bg-[var(--hover-bg)]'}`}>
+                                            <button onClick={() => setModelId(m.id)} className="flex-1 min-w-0 flex items-center gap-2.5 p-2.5 text-left">
+                                                <ModelIcon icon={m.icon} theme={theme} className="w-4 h-4 flex-shrink-0" active={isActive} />
+                                                <span className="flex-1 min-w-0 text-[13px] font-medium truncate">{m.name}</span>
+                                                {isActive && <Icon name="check" className="w-3.5 h-3.5 text-[var(--accent-blue)] flex-shrink-0" />}
+                                            </button>
+                                            {showEfforts && (
+                                                <div className={`gap-0.5 p-1 mr-1.5 rounded-lg bg-[var(--bg-body)] border border-[var(--border-color)] flex-shrink-0 ${efforts.length > 3 ? 'grid grid-cols-2' : 'flex flex-col'}`} title={t.effort}>
+                                                    {efforts.map(opt => (
+                                                        <button key={opt} onClick={() => setReasoningEffort(opt)}
+                                                            className={`px-2 py-0.5 rounded text-[10px] leading-tight whitespace-nowrap ${effectiveEffort === opt ? 'bg-[var(--bg-sidebar)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]'}`}>
+                                                            {(t.effortLabels && t.effortLabels[opt]) || opt}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="flex-1 min-h-[110px] overflow-y-auto px-2 border-t border-[var(--border-color)] pt-2">
+                                <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-[var(--text-secondary)] font-bold">{t.recent}</div>
+                                {chats.map(chat => (
+                                    <div key={chat.id} onClick={() => handleSwitchChat(chat.id)}
+                                        className={`group flex items-center justify-between p-2.5 px-3 rounded-lg cursor-pointer text-[13px] ${activeChatId === chat.id ? 'bg-[var(--active-chat-bg)] text-[var(--active-chat-text)] font-medium' : 'hover:bg-[var(--hover-bg)]'}`}>
+                                        <span className="truncate">{chat.title || t.newChat}</span>
+                                        {activeChatId === chat.id && (
+                                            <button onClick={(e) => deleteChat(e, chat.id)} className="opacity-70 hover:opacity-100 flex-shrink-0">
+                                                <Icon name="trash-2" className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="p-3 border-t border-[var(--border-color)]">
+                                <div className="flex items-center gap-1">
+                                    <button onClick={openSettings} className="flex-1 flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[13px]">
+                                        <Icon name="settings" className="w-4 h-4 text-[var(--text-secondary)]" /><span>{t.settings}</span>
+                                    </button>
+                                    <button onClick={() => setWebSearch(!webSearch)} disabled={currentModel.supportsTools === false}
+                                        className={`w-9 h-9 flex items-center justify-center rounded-lg ${currentModel.supportsTools === false ? 'opacity-30' : (webSearch ? 'text-[var(--accent-blue)] bg-[var(--cost-bg)]' : 'text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]')}`}
+                                        title={`${t.webSearch}: ${webSearch ? 'ON' : 'OFF'}`}>
+                                        <Icon name="globe" className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => document.getElementById('file-upload-wk').click()}
+                                        className="w-9 h-9 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]" title={t.attachPhoto}>
+                                        <Icon name="paperclip" className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                {attachments.length > 0 && (
+                                    <div className="flex gap-2 mt-2 overflow-x-auto scrollbar-slim">
+                                        {attachments.map((att, i) => (
+                                            <div key={i} className="relative w-11 h-11 flex-shrink-0">
+                                                <img src={att.base64} className="w-full h-full object-cover rounded-lg border border-[var(--border-color)]" alt="" />
+                                                <button onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
+                                                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5">
+                                                    <Icon name="x" className="w-2.5 h-2.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {balanceBlock}
+                            </div>
+                        </div>
+
+                        <input type="file" id="file-upload-wk" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
+                        <button onClick={() => setSafeMode(!safeMode)} className="fixed bottom-0 right-0 w-9 h-9 z-[100] cursor-default opacity-0 hover:opacity-10 transition-opacity duration-500 bg-[var(--safe-btn)]"></button>
+                        {modals}
+                    </>
+                );
+            }
+
+
             return (
                 <div className="flex h-screen w-full text-[var(--text-primary)] bg-[var(--bg-body)] overflow-hidden">
-                    <button onClick={() => setSafeMode(!safeMode)} className="fixed bottom-0 right-0 w-6 h-6 z-[100] cursor-default opacity-5 hover:opacity-100 transition-opacity duration-500 bg-[var(--safe-btn)]" title="Toggle View"></button>
+                    <button onClick={() => setSafeMode(!safeMode)} className="fixed bottom-0 right-0 w-9 h-9 z-[100] cursor-default opacity-5 hover:opacity-60 transition-opacity duration-500 bg-[var(--safe-btn)]" title=""></button>
                     {safeMode && (<div className="hidden md:block fixed top-0 left-0 w-4 h-full z-[60]" onMouseEnter={() => setIsSidebarHovered(true)}></div>)}
 
                     <aside
@@ -1080,17 +1888,7 @@
                             <button onClick={openSettings} className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-[var(--hover-bg)] transition-colors text-sm">
                                 <Icon name="settings" className="w-5 h-5 text-[var(--text-secondary)]" /><span>{t.settings}</span>
                             </button>
-                            {!safeMode && (
-                                <div className="mt-4 px-3 flex flex-col gap-2 cursor-pointer hover:opacity-80" onClick={fetchBalance} title="Обновить баланс">
-                                    <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-secondary)]">
-                                        <span>{t.balanceLabel}</span>
-                                        <span>{balanceData ? `${balancePercentage.toFixed(1)}%` : '...'}</span>
-                                    </div>
-                                    <div className="w-full h-1.5 bg-[var(--border-color)] rounded-full overflow-hidden">
-                                        <div className="h-full bg-[var(--accent-blue)] transition-all duration-500" style={{ width: `${balancePercentage}%` }}></div>
-                                    </div>
-                                </div>
-                            )}
+                            {balanceBlock}
                             <div className="mt-6 text-center text-[10px] text-[var(--text-secondary)] opacity-40 font-mono tracking-widest">{APP_VERSION}</div>
                         </div>
                     </aside>
@@ -1282,184 +2080,7 @@
                             </div>
                         </div>
 
-                        {/* Модалка размышления */}
-                        {reasoningModalMsg && (
-                            <Modal title={t.reasoningTitle} onClose={() => setReasoningModalMsg(null)}
-                                footer={<button onClick={() => setReasoningModalMsg(null)} className="px-6 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium">{t.close}</button>}>
-                                <div className="space-y-5 text-sm">
-                                    <div>
-                                        <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)] font-bold mb-2">reasoning tokens</div>
-                                        {reasoningModalMsg.reasoning ? (
-                                            <pre className="whitespace-pre-wrap font-mono text-xs bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl p-4 max-h-72 overflow-y-auto scrollbar-slim">{reasoningModalMsg.reasoning}</pre>
-                                        ) : <div className="text-[var(--text-secondary)]">{t.noReasoning}</div>}
-                                    </div>
-                                    <div>
-                                        <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)] font-bold mb-2">{t.searchLog}</div>
-                                        {(reasoningModalMsg.searches || []).length === 0 ? (
-                                            <div className="text-[var(--text-secondary)]">{t.noSearches}</div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {reasoningModalMsg.searches.map((s, i) => (
-                                                    <div key={s.id} className="bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl p-3">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--cost-bg)]">#{i+1}</span>
-                                                            <span className="font-medium">{s.query}</span>
-                                                            <span className="ml-auto text-[10px] font-mono text-[var(--text-secondary)]">{SEARCH_MODEL} · {fmt$(s.cost)}</span>
-                                                        </div>
-                                                        {s.summary && <div className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap max-h-40 overflow-y-auto scrollbar-slim">{s.summary}</div>}
-                                                        {s.error && <div className="text-xs text-red-400">{s.error}</div>}
-                                                        {s.citations && s.citations.length > 0 && (
-                                                            <div className="mt-2 flex flex-wrap gap-1.5">
-                                                                {s.citations.map((c, k) => (
-                                                                    <a key={k} href={c} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--cost-bg)] border border-[var(--border-color)] hover:text-[var(--accent-blue)]">{k+1}. {hostOf(c)}</a>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </Modal>
-                        )}
-
-                        {/* Модалка стоимости */}
-                        {costModalMsg && (() => {
-                            const main = costModalMsg.cost || 0;
-                            const search = costModalMsg.searchCost || 0;
-                            const total = main + search;
-                            const pct = (v) => total > 0 ? Math.max(2, (v / total) * 100) : 0;
-                            return (
-                                <Modal title={t.costTitle} onClose={() => setCostModalMsg(null)}
-                                    footer={<button onClick={() => setCostModalMsg(null)} className="px-6 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium">{t.close}</button>}>
-                                    <div className="max-w-md mx-auto">
-                                        <div className="rounded-2xl border border-[var(--border-color)] px-6 py-7 text-center"
-                                            style={{ background: 'linear-gradient(160deg, color-mix(in srgb, var(--accent-blue) 14%, transparent), transparent 70%)' }}>
-                                            <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--text-secondary)] mb-2">{t.costTotal}</div>
-                                            <div className="text-[34px] leading-none font-mono font-bold tracking-tight">{fmt$(total)}</div>
-                                            {total === 0 && <div className="text-xs text-[var(--text-secondary)] mt-3">{t.costPending}</div>}
-                                        </div>
-
-                                        <div className="mt-4 rounded-2xl border border-[var(--border-color)] overflow-hidden">
-                                            <div className="flex items-center gap-3.5 p-4 bg-[var(--bg-input)]">
-                                                <div className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center bg-[var(--cost-bg)]">
-                                                    <ModelIcon icon={costModalMsg.icon} theme={theme} className="w-5 h-5" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="text-sm font-medium">{t.costMain}</div>
-                                                    <div className="text-[11px] font-mono text-[var(--text-secondary)] truncate mt-0.5">{costModalMsg.actualModel || costModalMsg.modelId}</div>
-                                                    <div className="h-1 mt-2 rounded-full bg-[var(--cost-bg)] overflow-hidden">
-                                                        <div className="h-full rounded-full bg-[var(--accent-blue)] transition-all" style={{ width: `${pct(main)}%` }}></div>
-                                                    </div>
-                                                </div>
-                                                <span className="font-mono text-sm self-start pt-0.5">{fmt$(main)}</span>
-                                            </div>
-
-                                            <div className="h-px bg-[var(--border-color)]"></div>
-
-                                            <div className="flex items-center gap-3.5 p-4 bg-[var(--bg-input)]">
-                                                <div className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center bg-[var(--cost-bg)]">
-                                                    <Icon name="globe" className="w-4 h-4 text-[var(--accent-blue)]" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="text-sm font-medium">{t.costSearch}</div>
-                                                    <div className="text-[11px] font-mono text-[var(--text-secondary)] truncate mt-0.5">{SEARCH_MODEL} · ×{(costModalMsg.searches || []).length}</div>
-                                                    <div className="h-1 mt-2 rounded-full bg-[var(--cost-bg)] overflow-hidden">
-                                                        <div className="h-full rounded-full bg-[var(--text-secondary)] opacity-60 transition-all" style={{ width: `${pct(search)}%` }}></div>
-                                                    </div>
-                                                </div>
-                                                <span className="font-mono text-sm self-start pt-0.5">{fmt$(search)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Modal>
-                            );
-                        })()}
-
-                        {/* Настройки */}
-                        {isSettingsOpen && (
-                            <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4" onClick={() => setIsSettingsOpen(false)}>
-                                <div className="bg-[var(--bg-surface)] rounded-2xl w-full max-w-lg border border-[var(--border-color)] shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                                    <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
-                                        <h2 className="text-xl font-bold">{t.settings}</h2>
-                                        <button onClick={() => setIsSettingsOpen(false)} className="p-1 rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)]"><Icon name="x" className="w-5 h-5" /></button>
-                                    </div>
-                                    <div className="p-6 overflow-y-auto space-y-8 scrollbar-slim">
-                                        {/* Блок «ИИ и поведение» убран: системные инструкции и тумблер веб-поиска.
-                                            Веб-поиск включается только кнопкой глобуса в строке ввода.
-                                            Чтобы вернуть системные инструкции — см. openMemoryModal / isMemoryModalOpen ниже. */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsAppearance}</h3>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm mb-2 font-medium">{t.theme}</label>
-                                                    <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
-                                                        <button onClick={() => setTempTheme('light')} className={`flex-1 py-2 rounded-lg text-sm ${tempTheme === 'light' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Light</button>
-                                                        <button onClick={() => setTempTheme('dark')} className={`flex-1 py-2 rounded-lg text-sm ${tempTheme === 'dark' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Dark</button>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm mb-2 font-medium">{t.language}</label>
-                                                    <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
-                                                        <button onClick={() => setTempLanguage('ru')} className={`flex-1 py-2 rounded-lg text-sm ${tempLanguage === 'ru' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Русский</button>
-                                                        <button onClick={() => setTempLanguage('da')} className={`flex-1 py-2 rounded-lg text-sm ${tempLanguage === 'da' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Dansk</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm mb-2 font-medium">{t.tabTitleSetting}</label>
-                                                <input type="text" value={tempTabTitle} onChange={e => setTempTabTitle(e.target.value)} placeholder={t.tabTitlePlaceholder} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] text-sm" />
-                                            </div>
-                                        </div>
-
-                                        <div className="h-px bg-[var(--border-color)] opacity-50"></div>
-
-                                        <div className="space-y-4">
-                                            <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsData}</h3>
-                                            <div>
-                                                <label className="block text-sm mb-2 font-medium">{t.yourName}</label>
-                                                <input type="text" value={tempNickname} onChange={e => setTempNickname(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] text-sm" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm mb-2 font-medium">{t.apiKey}</label>
-                                                <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] font-mono text-sm" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="p-6 border-t border-[var(--border-color)] flex justify-between items-center gap-4">
-                                        <button onClick={clearAllHistory} className="px-5 py-2.5 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-full text-sm font-medium">{t.clearHistory}</button>
-                                        <button onClick={saveSettings} className="px-8 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium ml-auto">{t.save}</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {isMemoryModalOpen && (
-                            <Modal title={t.systemInstructions} onClose={() => setIsMemoryModalOpen(false)}
-                                footer={<>
-                                    <button onClick={() => setIsMemoryModalOpen(false)} className="px-6 py-2.5 hover:bg-[var(--hover-bg)] rounded-full font-medium">{t.cancel}</button>
-                                    <button onClick={saveMemory} className="px-8 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium">{t.save}</button>
-                                </>}>
-                                <textarea value={tempSystemInstruction} onChange={e => setTempSystemInstruction(e.target.value)} placeholder={t.sysInstPlaceholder}
-                                    className="w-full h-64 p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] resize-none leading-relaxed" autoFocus />
-                                <p className="mt-4 text-sm text-[var(--text-secondary)]">{t.sysInstDescription}</p>
-                            </Modal>
-                        )}
-
-                        {isWelcomeModalOpen && (
-                            <div className="fixed inset-0 bg-black/90 z-[150] flex items-center justify-center p-4">
-                                <div className="bg-[var(--bg-surface)] p-8 rounded-3xl w-full max-w-md border border-[var(--border-color)] text-center">
-                                    <div className="mb-6"><GeminiIcon className="w-14 h-14 mx-auto animate-pulse" /></div>
-                                    <h2 className="text-2xl font-bold mb-2">{t.welcome}</h2>
-                                    <p className="text-[var(--text-secondary)] mb-8">{t.askName}</p>
-                                    <input type="text" value={nickname} onChange={e => setNickname(e.target.value)} placeholder={t.namePlaceholder}
-                                        className="w-full p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] text-center text-lg mb-6"
-                                        onKeyDown={e => e.key === 'Enter' && saveNickname(nickname)} />
-                                    <button onClick={() => saveNickname(nickname)} className="w-full py-4 bg-[var(--accent-blue)] text-[#000] rounded-xl font-bold">{t.startChat}</button>
-                                </div>
-                            </div>
-                        )}
+                        {modals}
                     </main>
                 </div>
             );
