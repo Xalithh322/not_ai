@@ -469,7 +469,7 @@
                 officialSite:'Официальный сайт OpenRouter', greeting:'Привет', helpPrompt:'Как я могу помочь тебе сегодня?',
                 guest:'Гость', send:'Отправить', stop:'Остановить генерацию', inputPlaceholder:'Напиши свой запрос...',
                 yourName:'Твое имя', tabTitleSetting:'Название вкладки', tabTitlePlaceholder:'not ai', theme:'Тема',
-                language:'Язык', apiKey:'OpenRouter API Key', cancel:'Отмена', save:'Сохранить', close:'Закрыть',
+                language:'Язык', apiKey:'Ключ OpenRouter или код доступа', cancel:'Отмена', save:'Сохранить', close:'Закрыть',
                 welcome:'Добро пожаловать!', askName:'Как мне к тебе обращаться?', namePlaceholder:'Введи свое имя',
                 startChat:'Начать общение', emptyResponse:'Пустой ответ от сервера', requestError:'Ошибка запроса',
                 errorPrefix:'Ошибка: ', systemInstructions:'Системные инструкции',
@@ -491,6 +491,10 @@
                 visionUnsupported:'⚠️ **Ошибка:** выбранная модель не поддерживает изображения. Отправьте только текст или выберите другую модель.',
                 free:'Бесплатно', noTools:'Без поиска', modelsSynced:'Список моделей обновлён',
                 balanceByDevice:'Расход по устройствам', untracked:'Неучтённое', thisDevice:'это устройство',
+                apiKeyPlaceholder:'sk-or-... или код доступа',
+                apiKeyHint:'Вставь ключ OpenRouter или короткий код доступа.',
+                codeAccepted:'код принят', codeUnknown:'Такой код не найден — проверь написание.',
+                codeChecking:'Проверяю код...', ownKeyUsed:'Используется свой ключ OpenRouter.',
                 deviceRequests:'запросов', usedLabel:'Использовано', limitLabel:'Лимит ключа',
                 noDeviceData:'Пока никто не потратил ни цента через этот ключ.',
                 noLimitNote:'У ключа нет лимита — показаны доли расхода между устройствами.',
@@ -501,7 +505,7 @@
                 officialSite:'Officiel OpenRouter webside', greeting:'Hej', helpPrompt:'Hvordan kan jeg hjælpe dig i dag?',
                 guest:'Gæst', send:'Send', stop:'Stop generering', inputPlaceholder:'Indtast din besked...',
                 yourName:'Dit navn', tabTitleSetting:'Fanebladstitel', tabTitlePlaceholder:'not ai', theme:'Tema',
-                language:'Sprog', apiKey:'OpenRouter API Key', cancel:'Annuller', save:'Gem', close:'Luk',
+                language:'Sprog', apiKey:'OpenRouter-nøgle eller adgangskode', cancel:'Annuller', save:'Gem', close:'Luk',
                 welcome:'Velkommen!', askName:'Hvad skal jeg kalde dig?', namePlaceholder:'Indtast dit navn',
                 startChat:'Start chat', emptyResponse:'Tomt svar fra serveren', requestError:'Anmodningsfejl',
                 errorPrefix:'Fejl: ', systemInstructions:'Systeminstruktioner',
@@ -523,6 +527,10 @@
                 visionUnsupported:'⚠️ **Fejl:** den valgte model understøtter ikke billeder. Send kun tekst eller vælg en anden model.',
                 free:'Gratis', noTools:'Uden søgning', modelsSynced:'Modellisten er opdateret',
                 balanceByDevice:'Forbrug pr. enhed', untracked:'Ikke registreret', thisDevice:'denne enhed',
+                apiKeyPlaceholder:'sk-or-... eller adgangskode',
+                apiKeyHint:'Indsæt din OpenRouter-nøgle eller en kort adgangskode.',
+                codeAccepted:'kode accepteret', codeUnknown:'Koden findes ikke — tjek stavningen.',
+                codeChecking:'Tjekker koden...', ownKeyUsed:'Bruger din egen OpenRouter-nøgle.',
                 deviceRequests:'forespørgsler', usedLabel:'Brugt', limitLabel:'Nøglens grænse',
                 noDeviceData:'Ingen har brugt noget med denne nøgle endnu.',
                 noLimitNote:'Nøglen har ingen grænse — viser fordelingen mellem enheder.',
@@ -698,6 +706,7 @@
             const [keyHash, setKeyHash] = useState(null);
             const [isBalanceOpen, setIsBalanceOpen] = useState(false);
             const keyHashRef = useRef(null);
+            const [keyInfo, setKeyInfo] = useState({ kind: 'none', label: '' });
 
             /* «внешний вид» обёртки — те же настройки, что в панели Appearance */
             const [wikiText, setWikiText] = useState(safeStorage.getItem('wk_text') || 'standard');
@@ -862,11 +871,34 @@
             useEffect(() => {
                 let cancelled = false;
                 (async () => {
-                    const h = await hashApiKey(apiKey);
+                    const raw = (apiKey || '').trim();
+                    if (!raw) {
+                        keyHashRef.current = null; usageReporter.keyHash = null;
+                        setKeyHash(null); setKeyInfo({ kind: 'none', label: '' });
+                        setUsageDevices([]);
+                        return;
+                    }
+                    /* «sk-…» — обычный ключ, всё остальное считаем кодом доступа */
+                    if (/^sk-/i.test(raw)) {
+                        const h = await hashApiKey(raw);
+                        if (cancelled) return;
+                        keyHashRef.current = h; usageReporter.keyHash = h;
+                        setKeyHash(h); setKeyInfo({ kind: 'key', label: '' });
+                        loadUsage(h);
+                        return;
+                    }
+                    setKeyInfo({ kind: 'checking', label: '' });
+                    let info = { kind: 'bad', label: '' }, h = null;
+                    try {
+                        const res = await fetch(`${API_BASE}/key/resolve?code=${encodeURIComponent(raw)}`, { cache: 'no-store' });
+                        const data = await res.json();
+                        if (res.ok && data.ok) { h = data.keyId; info = { kind: 'code', label: data.label || '' }; }
+                    } catch (e) {
+                        info = { kind: 'offline', label: '' };
+                    }
                     if (cancelled) return;
-                    keyHashRef.current = h;
-                    usageReporter.keyHash = h;
-                    setKeyHash(h);
+                    keyHashRef.current = h; usageReporter.keyHash = h;
+                    setKeyHash(h); setKeyInfo(info);
                     loadUsage(h);
                 })();
                 return () => { cancelled = true; };
@@ -1125,8 +1157,20 @@
                     ? { ...c, messages: c.messages.map(m => m.id === modelMsgId ? updater(m) : m) } : c));
 
                 let fullText = "", displayed = "", reasoningAcc = "", lastReasoningLen = -1;
-                let streamFinished = false, finalized = false;
+                let streamFinished = false, finalized = false, reported = false;
                 let mainCost = 0, searchCost = 0, lastGenId = null;
+
+                /* учёт вызывается сразу по завершении потока: он не должен ждать
+                   отрисовки, которая во вкладке в фоне может не тикать */
+                const reportSpend = () => {
+                    if (reported) return;
+                    reported = true;
+                    const spent = mainCost + searchCost;
+                    if (spent > 0) usageReporter.add(keyHashRef.current, spent, 1);
+                    /* стоимость иногда приходит только из /generation — запрос засчитаем там */
+                    if (mainCost === 0 && lastGenId && !model.free) pollCost(lastGenId, currentChatId, modelMsgId, spent > 0 ? 0 : 1);
+                    fetchBalance();
+                };
 
                 const finalize = () => {
                     if (finalized) return;
@@ -1134,11 +1178,7 @@
                     setIsGenerating(false); setIsLoading(false);
                     if (abortControllerRef.current === controller) abortControllerRef.current = null;
                     patch(m => ({ ...m, text: fullText || m.text, reasoning: reasoningAcc, searchOpen: false, isThinking: false }));
-                    const spent = mainCost + searchCost;
-                    if (spent > 0) usageReporter.add(keyHashRef.current, spent, 1);
-                    /* стоимость иногда приходит только из /generation — запрос засчитаем там */
-                    if (mainCost === 0 && lastGenId && !model.free) pollCost(lastGenId, currentChatId, modelMsgId, spent > 0 ? 0 : 1);
-                    fetchBalance();
+                    reportSpend();
                 };
 
                 const updateUI = () => {
@@ -1300,10 +1340,12 @@
                     }
 
                     streamFinished = true;
+                    reportSpend();
                     if (!fullText) patch(m => ({ ...m, text: `⚠️ ${t.emptyResponse}`, isError: true, isThinking: false, searchOpen: false }));
 
                 } catch (e) {
                     streamFinished = true; displayed = fullText;
+                    reportSpend();
                     if (e.name === 'AbortError') {
                         patch(m => ({ ...m, text: fullText ? fullText + `\n\n${t.reqStopped}` : t.reqStopped, isError: !fullText, isThinking: false, searchOpen: false }));
                     } else {
@@ -1603,7 +1645,16 @@
                                             </div>
                                             <div>
                                                 <label className="block text-sm mb-2 font-medium">{t.apiKey}</label>
-                                                <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] font-mono text-sm" />
+                                                <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} placeholder={t.apiKeyPlaceholder} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] font-mono text-sm" />
+                                                <div className="text-xs mt-2 flex items-center gap-2">
+                                                    {keyInfo.kind === 'code' && (
+                                                        <span className="text-[var(--accent-blue)]">✓ {t.codeAccepted}{keyInfo.label ? ` — ${keyInfo.label}` : ''}</span>
+                                                    )}
+                                                    {keyInfo.kind === 'bad' && <span className="text-red-400">{t.codeUnknown}</span>}
+                                                    {keyInfo.kind === 'checking' && <span className="text-[var(--text-secondary)]">{t.codeChecking}</span>}
+                                                    {keyInfo.kind === 'key' && <span className="text-[var(--text-secondary)]">{t.ownKeyUsed}</span>}
+                                                    {(keyInfo.kind === 'none' || keyInfo.kind === 'offline') && <span className="text-[var(--text-secondary)]">{t.apiKeyHint}</span>}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
