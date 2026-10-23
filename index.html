@@ -51,6 +51,11 @@
         .scrollbar-slim::-webkit-scrollbar { width: 4px; }
         .scrollbar-hide::-webkit-scrollbar { width: 6px; }
 
+        /* кружок выбора своего цвета */
+        .dot-color { -webkit-appearance: none; appearance: none; border: none; padding: 0; background: none; cursor: pointer; }
+        .dot-color::-webkit-color-swatch-wrapper { padding: 0; }
+        .dot-color::-webkit-color-swatch { border: 1px solid rgba(128,128,128,.45); border-radius: 50%; }
+
         /* ================= обёртка «Википедия» (режим скрытности) ================= */
         .wk {
             --wk-bg:#fff; --wk-fg:#202122; --wk-mut:#54595d; --wk-bd:#a2a9b1; --wk-bd2:#eaecf0;
@@ -237,6 +242,7 @@
                 name: String(m.name || id),
                 description: String(m.description || ''),
                 icon: String(m.icon || 'gemini'),
+                color: /^#[0-9a-f]{6}$/i.test(String(m.color || '')) ? String(m.color).toLowerCase() : null,
                 vision: m.vision !== false,
                 free: !!m.free,
                 supportsTools: m.supportsTools !== false,
@@ -296,6 +302,14 @@
             return [os, br, deviceId.slice(0, 4)].filter(Boolean).join(' · ');
         })();
 
+        /* запасной цвет модели, если в админке не задан */
+        const autoModelColor = (id) => {
+            let h = 2166136261;
+            const str = String(id);
+            for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+            return `hsl(${Math.abs(h) % 360} 55% 58%)`;
+        };
+
         /* цвета раздаются по позиции в отсортированном списке id — одинаково на всех устройствах */
         const DEVICE_PALETTE = ['#4285f4', '#ea4335', '#34a853', '#f9a825', '#a142f4', '#00acc1', '#ff7043', '#8bc34a', '#ec407a', '#5c6bc0'];
         const deviceColorMap = (ids) => {
@@ -305,48 +319,97 @@
             return map;
         };
 
-        async function hashApiKey(key) {
-            if (!key) return null;
+        async function sha16(value) {
+            if (!value) return null;
             try {
-                const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(key)));
+                const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(value)));
                 return Array.from(new Uint8Array(buf)).slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
             } catch (e) { return null; }
         }
+        const hashApiKey = sha16;
 
-        /* накопление и отложенная отправка: одна запись в KV вместо записи на каждое сообщение */
+        const PENDING_KEY = 'usage_pending_v1';
+        const PENDING_GENS_KEY = 'usage_gens_v1';
+        const loadJSON = (k, def) => {
+            try { const v = JSON.parse(safeStorage.getItem(k) || 'null'); return v == null ? def : v; }
+            catch (e) { return def; }
+        };
+        const saveJSON = (k, v) => safeStorage.setItem(k, JSON.stringify(v));
+
+        /* накопление и отложенная отправка: одна запись в KV вместо записи на каждое сообщение.
+           Накопленное сразу кладётся в localStorage, чтобы не пропасть при закрытии вкладки. */
         const usageReporter = {
-            pending: { cost: 0, requests: 0 },
+            pending: loadJSON(PENDING_KEY, { cost: 0, requests: 0, keyHash: null, models: {} }),
             timer: null,
             keyHash: null,
             onFlush: null,
-            add(keyHash, cost, requests) {
+            persist() { saveJSON(PENDING_KEY, this.pending); },
+            add(keyHash, cost, requests, modelId) {
                 if (!keyHash || !(cost > 0)) return;
                 this.keyHash = keyHash;
-                this.pending.cost += cost;
-                this.pending.requests += requests || 0;
+                this.pending.keyHash = keyHash;
+                this.pending.cost = (this.pending.cost || 0) + cost;
+                this.pending.requests = (this.pending.requests || 0) + (requests || 0);
+                if (modelId) {
+                    if (!this.pending.models) this.pending.models = {};
+                    const was = this.pending.models[modelId] || { cost: 0, requests: 0 };
+                    this.pending.models[modelId] = {
+                        cost: was.cost + cost,
+                        requests: was.requests + (requests || 0)
+                    };
+                }
+                this.persist();
                 clearTimeout(this.timer);
                 this.timer = setTimeout(() => this.flush(), 4000);
             },
             async flush() {
                 clearTimeout(this.timer);
-                const keyHash = this.keyHash;
-                const { cost, requests } = this.pending;
+                const keyHash = this.pending.keyHash || this.keyHash;
+                const cost = this.pending.cost || 0;
+                const requests = this.pending.requests || 0;
+                const models = this.pending.models || {};
                 if (!keyHash || !(cost > 0)) return;
-                this.pending = { cost: 0, requests: 0 };
+                this.pending = { cost: 0, requests: 0, keyHash: null, models: {} };
+                this.persist();
                 try {
-                    await fetch(`${API_BASE}/usage`, {
+                    const res = await fetch(`${API_BASE}/usage`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ key: keyHash, device: deviceId, name: deviceAutoName,
-                                               cost: Math.round(cost * 1e6) / 1e6, requests })
+                                               cost: Math.round(cost * 1e6) / 1e6, requests, models })
                     });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
                     if (this.onFlush) this.onFlush();
                 } catch (e) {
                     /* не потеряем: вернём в очередь до следующей попытки */
-                    this.pending.cost += cost;
-                    this.pending.requests += requests;
+                    this.pending.keyHash = keyHash;
+                    this.pending.cost = (this.pending.cost || 0) + cost;
+                    this.pending.requests = (this.pending.requests || 0) + requests;
+                    if (!this.pending.models) this.pending.models = {};
+                    for (const id of Object.keys(models)) {
+                        const was = this.pending.models[id] || { cost: 0, requests: 0 };
+                        this.pending.models[id] = {
+                            cost: was.cost + models[id].cost,
+                            requests: was.requests + models[id].requests
+                        };
+                    }
+                    this.persist();
                 }
             }
+        };
+
+        /* генерации, по которым стоимость ещё не пришла. Переживают закрытие вкладки
+           и удаление чата: деньги привязаны к устройству, а не к переписке. */
+        const genQueue = {
+            list: loadJSON(PENDING_GENS_KEY, []),
+            save() { this.list = this.list.slice(-30); saveJSON(PENDING_GENS_KEY, this.list); },
+            add(id, keyHash, reqInc, modelId) {
+                if (!id || !keyHash) return;
+                if (this.list.some(g => g.id === id)) return;
+                this.list.push({ id, keyHash, reqInc: reqInc || 0, modelId: modelId || '', at: Date.now() });
+                this.save();
+            },
+            remove(id) { this.list = this.list.filter(g => g.id !== id); this.save(); }
         };
         window.addEventListener('beforeunload', () => { try { usageReporter.flush(); } catch (e) {} });
 
@@ -491,9 +554,11 @@
                 visionUnsupported:'⚠️ **Ошибка:** выбранная модель не поддерживает изображения. Отправьте только текст или выберите другую модель.',
                 free:'Бесплатно', noTools:'Без поиска', modelsSynced:'Список моделей обновлён',
                 balanceByDevice:'Расход по устройствам', thisDevice:'это устройство',
+                extendedStats:'Какие модели используют', noModelData:'Пока нет данных по моделям.', yourColor:'Твой цвет — нажми, чтобы сменить',
                 apiKeyPlaceholder:'sk-or-... или код доступа',
+                guestNotice:'Гостевой режим: работает общий ключ владельца сайта. Вопросы и ответы в этом режиме видны ему. Свой код или ключ вводится в настройках.',
                 apiKeyHint:'Вставь ключ OpenRouter или короткий код доступа.',
-                codeAccepted:'код принят', codeUnknown:'Такой код не найден — проверь написание.',
+                codeAccepted:'код принят', codeUnknown:'Такой код не найден - проверь написание.',
                 codeChecking:'Проверяю код...', ownKeyUsed:'Используется свой ключ OpenRouter.',
                 deviceRequests:'запросов', usedLabel:'Использовано', limitLabel:'Лимит ключа',
                 noDeviceData:'Пока никто не потратил ни цента через этот ключ.',
@@ -527,9 +592,11 @@
                 visionUnsupported:'⚠️ **Fejl:** den valgte model understøtter ikke billeder. Send kun tekst eller vælg en anden model.',
                 free:'Gratis', noTools:'Uden søgning', modelsSynced:'Modellisten er opdateret',
                 balanceByDevice:'Forbrug pr. enhed', thisDevice:'denne enhed',
+                extendedStats:'Hvilke modeller bruges', noModelData:'Ingen data om modeller endnu.', yourColor:'Din farve — klik for at skifte',
                 apiKeyPlaceholder:'sk-or-... eller adgangskode',
+                guestNotice:'Gæstetilstand: du bruger sidens fælles nøgle. Spørgsmål og svar her er synlige for ejeren. Din egen kode eller nøgle indtastes i indstillingerne.',
                 apiKeyHint:'Indsæt din OpenRouter-nøgle eller en kort adgangskode.',
-                codeAccepted:'kode accepteret', codeUnknown:'Koden findes ikke — tjek stavningen.',
+                codeAccepted:'kode accepteret', codeUnknown:'Koden findes ikke - tjek stavningen.',
                 codeChecking:'Tjekker koden...', ownKeyUsed:'Bruger din egen OpenRouter-nøgle.',
                 deviceRequests:'forespørgsler', usedLabel:'Brugt', limitLabel:'Nøglens grænse',
                 noDeviceData:'Ingen har brugt noget med denne nøgle endnu.',
@@ -696,7 +763,7 @@
         const App = () => {
             const [apiKey, setApiKey] = useState(safeStorage.getItem('gemini_user_api_key') || '');
             const [theme, setTheme] = useState(safeStorage.getItem('gemini_theme') || 'dark');
-            const [language, setLanguage] = useState(safeStorage.getItem('gemini_language') || 'ru');
+            const [language, setLanguage] = useState(safeStorage.getItem('gemini_language') || 'da');
             const [nickname, setNickname] = useState(safeStorage.getItem('gemini_nickname') || '');
             const [tabTitle, setTabTitle] = useState(safeStorage.getItem('gemini_tab_title') || 'not ai');
             const [systemInstruction, setSystemInstruction] = useState(safeStorage.getItem('gemini_system_instruction') || '');
@@ -705,8 +772,12 @@
             const [usageDevices, setUsageDevices] = useState([]);
             const [keyHash, setKeyHash] = useState(null);
             const [isBalanceOpen, setIsBalanceOpen] = useState(false);
+            const [statsOpen, setStatsOpen] = useState(false);
             const keyHashRef = useRef(null);
             const [keyInfo, setKeyInfo] = useState({ kind: 'none', label: '' });
+            const [myTag, setMyTag] = useState(null);
+            const colorTimerRef = useRef(null);
+            const myTagRef = useRef(null);
 
             /* «внешний вид» обёртки — те же настройки, что в панели Appearance */
             const [wikiText, setWikiText] = useState(safeStorage.getItem('wk_text') || 'standard');
@@ -759,7 +830,6 @@
             const [costModalMsg, setCostModalMsg] = useState(null);
 
             const [tempTheme, setTempTheme] = useState(theme);
-            const [tempLanguage, setTempLanguage] = useState(language);
             const [tempNickname, setTempNickname] = useState(nickname);
             const [tempTabTitle, setTempTabTitle] = useState(tabTitle);
             const [tempApiKey, setTempApiKey] = useState(apiKey);
@@ -767,6 +837,7 @@
 
             const textareaRef = useRef(null);
             const abortControllerRef = useRef(null);
+            const isBusyRef = useRef(false);
             const chatContainerRef = useRef(null);
             const isUserScrolledUp = useRef(false);
             const lastScrollTopRef = useRef(0);
@@ -862,6 +933,22 @@
             };
             useEffect(() => { fetchBalance(); }, [apiKey]);
 
+            /* догоняем траты, оставшиеся с прошлых сессий */
+            const recoverPending = async () => {
+                const key = apiKeyRef.current;
+                const h = keyHashRef.current;
+                if (!h) return;
+                usageReporter.flush();
+                if (!key || !genQueue.list.length) return;
+                for (const g of [...genQueue.list]) {
+                    /* сутки не получилось — скорее всего уже не получится */
+                    if (Date.now() - (g.at || 0) > 864e5) { genQueue.remove(g.id); continue; }
+                    if (g.keyHash !== h) continue;
+                    /* обычным опросом: он сам повторяет попытки и чистит очередь */
+                    pollCost(g.id, null, null, g.reqInc || 0, g.modelId || '');
+                }
+            };
+
             const loadUsage = async (hash) => {
                 const h = hash || keyHashRef.current;
                 if (!h) { setUsageDevices([]); return; }
@@ -888,7 +975,7 @@
                         if (cancelled) return;
                         keyHashRef.current = h; usageReporter.keyHash = h;
                         setKeyHash(h); setKeyInfo({ kind: 'key', label: '' });
-                        loadUsage(h);
+                        loadUsage(h); recoverPending();
                         return;
                     }
                     setKeyInfo({ kind: 'checking', label: '' });
@@ -896,17 +983,75 @@
                     try {
                         const res = await fetch(`${API_BASE}/key/resolve?code=${encodeURIComponent(raw)}`, { cache: 'no-store' });
                         const data = await res.json();
-                        if (res.ok && data.ok) { h = data.keyId; info = { kind: 'code', label: data.label || '' }; }
+                        if (res.ok && data.ok) { h = data.keyId; info = { kind: 'code', label: data.label || '', guest: !!data.guest }; }
                     } catch (e) {
                         info = { kind: 'offline', label: '' };
                     }
                     if (cancelled) return;
                     keyHashRef.current = h; usageReporter.keyHash = h;
                     setKeyHash(h); setKeyInfo(info);
-                    loadUsage(h);
+                    loadUsage(h); recoverPending();
                 })();
                 return () => { cancelled = true; };
             }, [apiKey]);
+            useEffect(() => {
+                let cancelled = false;
+                (async () => {
+                    const tag = keyHash ? await sha16(keyHash + ':' + deviceId) : null;
+                    if (!cancelled) { myTagRef.current = tag; setMyTag(tag); }
+                })();
+                return () => { cancelled = true; };
+            }, [keyHash]);
+
+            /* пришёл без ключа — сайт выдаёт гостевой код владельца */
+            useEffect(() => {
+                if ((apiKey || '').trim()) return;
+                let cancelled = false;
+                (async () => {
+                    try {
+                        const res = await fetch(`${API_BASE}/key/guest`, { cache: 'no-store' });
+                        if (!res.ok) return;
+                        const d = await res.json();
+                        if (!d.ok || !d.code || cancelled) return;
+                        setApiKey(d.code);
+                        safeStorage.setItem('gemini_user_api_key', d.code);
+                        apiKeyRef.current = d.code;
+                    } catch (e) {}
+                })();
+                return () => { cancelled = true; };
+            }, [apiKey]);
+
+            /* журнал гостевых диалогов: воркер примет запись только для гостевого кода */
+            const logGuest = (q, a, modelId) => {
+                const code = (apiKeyRef.current || '').trim();
+                if (!code || !(q || a)) return;
+                try {
+                    fetch(`${API_BASE}/guestlog`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code, q, a, model: modelId || '', tag: myTagRef.current || '' })
+                    });
+                } catch (e) {}
+            };
+
+            /* свой цвет меняется без админки: воркер требует сырой id устройства,
+               а он есть только у владельца */
+            const changeMyColor = (color) => {
+                if (!keyHashRef.current || !myTag) return;
+                setUsageDevices(prev => prev.map(d => (d.tag === myTag ? { ...d, color } : d)));
+                clearTimeout(colorTimerRef.current);
+                colorTimerRef.current = setTimeout(async () => {
+                    try {
+                        await fetch(`${API_BASE}/usage/color`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ key: keyHashRef.current, device: deviceId, color })
+                        });
+                    } catch (e) {}
+                    loadUsage();
+                }, 400);
+            };
+
             useEffect(() => {
                 usageReporter.onFlush = () => loadUsage();
                 return () => { usageReporter.onFlush = null; };
@@ -961,13 +1106,13 @@
                 setIsWelcomeModalOpen(false);
             };
             const openSettings = () => {
-                setTempTheme(theme); setTempLanguage(language); setTempNickname(nickname);
+                setTempTheme(theme); setTempNickname(nickname);
                 setTempTabTitle(tabTitle); setTempApiKey(apiKey); setIsSettingsOpen(true);
             };
             const saveSettings = () => {
                 const finalName = tempNickname.trim() || t.guest;
                 const finalTab = tempTabTitle.trim() || t.tabTitlePlaceholder;
-                setTheme(tempTheme); setLanguage(tempLanguage); setNickname(finalName);
+                setTheme(tempTheme); setNickname(finalName);
                 setTabTitle(finalTab); setApiKey(tempApiKey);
                 safeStorage.setItem('gemini_nickname', finalName);
                 safeStorage.setItem('gemini_tab_title', finalTab);
@@ -1057,7 +1202,10 @@
                 } catch (e) {}
             };
 
-            const pollCost = async (genId, chatId, messageId, reqInc) => {
+            const pollCost = async (genId, chatId, messageId, reqInc, modelId) => {
+                /* если стоимость не успеет прийти (закрыли вкладку, удалили чат) —
+                   доберём её при следующем запуске */
+                genQueue.add(genId, keyHashRef.current, reqInc, modelId);
                 let attempt = 0;
                 const check = async () => {
                     if (attempt >= 30) return;
@@ -1069,7 +1217,8 @@
                             if (cost !== undefined && cost !== null && cost > 0) {
                                 setChats(prev => prev.map(c => c.id === chatId
                                     ? { ...c, messages: c.messages.map(m => m.id === messageId ? { ...m, cost } : m) } : c));
-                                usageReporter.add(keyHashRef.current, cost, reqInc || 0);
+                                genQueue.remove(genId);
+                                usageReporter.add(keyHashRef.current, cost, reqInc || 0, modelId);
                                 return;
                             }
                         }
@@ -1112,6 +1261,19 @@
 
             /* ---------- ОТПРАВКА СООБЩЕНИЯ ---------- */
             const sendMessage = async () => {
+                /* пока предыдущий ответ не дописан, новую отправку не принимаем */
+                if (isBusyRef.current) return;
+
+                /* переключение языка: такой запрос в модель не уходит */
+                const cmd = input.trim().toLowerCase().replace(/[.!?]+$/, '');
+                if (cmd === 'русский язык' || cmd === 'dansk sprog') {
+                    const lang = cmd === 'русский язык' ? 'ru' : 'da';
+                    setLanguage(lang);
+                    safeStorage.setItem('gemini_language', lang);
+                    setInput('');
+                    return;
+                }
+
                 if (!input.trim() && attachments.length === 0) return;
                 const model = currentModel;
 
@@ -1139,6 +1301,7 @@
                     return;
                 }
 
+                isBusyRef.current = true;
                 setIsLoading(true); setIsGenerating(true);
                 const modelMsgId = genMsgId();
 
@@ -1170,15 +1333,18 @@
                     if (reported) return;
                     reported = true;
                     const spent = mainCost + searchCost;
-                    if (spent > 0) usageReporter.add(keyHashRef.current, spent, 1);
+                    if (spent > 0) usageReporter.add(keyHashRef.current, spent, 1, model.id);
                     /* стоимость иногда приходит только из /generation — запрос засчитаем там */
-                    if (mainCost === 0 && lastGenId && !model.free) pollCost(lastGenId, currentChatId, modelMsgId, spent > 0 ? 0 : 1);
+                    if (mainCost === 0 && lastGenId && !model.free) pollCost(lastGenId, currentChatId, modelMsgId, spent > 0 ? 0 : 1, model.id);
                     fetchBalance();
+                    /* в гостевом режиме переписка видна владельцу ключа — об этом сказано в интерфейсе */
+                    if (keyInfo.guest) logGuest(userText, fullText, model.id);
                 };
 
                 const finalize = () => {
                     if (finalized) return;
                     finalized = true;
+                    isBusyRef.current = false;
                     setIsGenerating(false); setIsLoading(false);
                     if (abortControllerRef.current === controller) abortControllerRef.current = null;
                     patch(m => ({ ...m, text: fullText || m.text, reasoning: reasoningAcc, searchOpen: false, isThinking: false }));
@@ -1377,17 +1543,18 @@
                 const used = balanceData ? balanceData.usage : 0;
                 /* делим на сумму показанного: сегменты устройств заполняют потраченную часть целиком */
                 const denom = Math.max(tracked, 1e-9);
-                const colors = deviceColorMap(list.map(d => d.device));
+                const colors = deviceColorMap(list.map(d => d.tag));
                 const fill = limit > 0 ? Math.min((used / limit) * 100, 100) : (tracked > 0 ? 100 : 0);
                 const segs = list.map(d => ({
-                    device: d.device,
-                    name: d.name || ('Устройство ' + String(d.device).slice(0, 4)),
+                    tag: d.tag,
+                    name: d.name || ('Устройство ' + String(d.tag).slice(0, 4)),
                     cost: Number(d.cost),
                     requests: Number(d.requests) || 0,
+                    models: (d.models && typeof d.models === 'object') ? d.models : {},
                     last: Number(d.last) || 0,
                     /* цвет из админки, иначе автоматический по позиции */
-                    color: d.color || colors[d.device],
-                    mine: d.device === deviceId,
+                    color: d.color || colors[d.tag],
+                    mine: !!myTag && d.tag === myTag,
                     share: Number(d.cost) / denom,
                     width: (Number(d.cost) / denom) * fill
                 }));
@@ -1397,12 +1564,20 @@
             const toggleSearchPanel = (chatId, msgId) => setChats(prev => prev.map(c => c.id === chatId
                 ? { ...c, messages: c.messages.map(m => m.id === msgId ? { ...m, searchOpen: !m.searchOpen } : m) } : c));
 
-            const openBalance = () => { setIsBalanceOpen(true); fetchBalance(); loadUsage(); };
+            const modelInfo = useMemo(() => {
+                const map = {};
+                (models || []).forEach((m) => { map[m.id] = m; });
+                return map;
+            }, [models]);
+            const modelName = (id) => (modelInfo[id] && modelInfo[id].name) || id;
+            const modelColor = (id) => (modelInfo[id] && modelInfo[id].color) || autoModelColor(id);
+
+            const openBalance = () => { setIsBalanceOpen(true); setStatsOpen(false); fetchBalance(); loadUsage(); };
 
             const balanceBar = (
                 <div className="w-full h-1.5 bg-[var(--border-color)] rounded-full overflow-hidden flex">
                     {usageBars.segs.map(s => (
-                        <div key={s.device} className="h-full transition-all duration-500"
+                        <div key={s.tag} className="h-full transition-all duration-500"
                             style={{ width: `${s.width}%`, background: s.color }} title={`${s.name} — ${fmt$(s.cost)}`}></div>
                     ))}
                     {usageBars.segs.length === 0 && (
@@ -1422,7 +1597,7 @@
                     {usageBars.segs.length > 0 && (
                         <div className="flex flex-wrap gap-x-2.5 gap-y-1 pt-0.5">
                             {usageBars.segs.slice(0, 4).map(s => (
-                                <span key={s.device} className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
+                                <span key={s.tag} className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
                                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }}></span>
                                     <span className="truncate max-w-[88px]">{s.name}</span>
                                 </span>
@@ -1532,23 +1707,80 @@
 
                         {/* Расход по устройствам */}
                         {isBalanceOpen && (
-                            <Modal title={t.balanceByDevice} onClose={() => setIsBalanceOpen(false)}
+                            <Modal onClose={() => setIsBalanceOpen(false)}
+                                title={<span className="flex items-center gap-2">
+                                    {t.balanceByDevice}
+                                    <button onClick={() => setStatsOpen(v => !v)} title={t.extendedStats}
+                                        className={`w-6 h-6 flex items-center justify-center rounded-md transition-colors ${statsOpen ? 'bg-[var(--cost-bg)] text-[var(--accent-blue)]' : 'text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]'}`}>
+                                        <Icon name="bar-chart-2" className="w-3.5 h-3.5" />
+                                    </button>
+                                </span>}
                                 footer={<button onClick={() => setIsBalanceOpen(false)} className="px-6 py-2.5 bg-[var(--accent-blue)] text-[#000] rounded-full font-medium">{t.close}</button>}>
                                 <div className="space-y-4 text-sm">
                                     <div className="w-full h-3 rounded-full overflow-hidden flex bg-[var(--border-color)]">
                                         {usageBars.segs.map(s => (
-                                            <div key={s.device} style={{ width: `${s.width}%`, background: s.color }} title={s.name}></div>
+                                            <div key={s.tag} style={{ width: `${s.width}%`, background: s.color }} title={s.name}></div>
                                         ))}
 
                                     </div>
 
-                                    {usageBars.segs.length === 0 ? (
+                                    {statsOpen && (
+                                        <div className="space-y-2.5">
+                                            {usageBars.segs.map(s => {
+                                                const entries = Object.entries(s.models || {})
+                                                    .filter(([, v]) => Number(v.cost) > 0)
+                                                    .sort((a, b) => Number(b[1].cost) - Number(a[1].cost));
+                                                const tot = entries.reduce((x, [, v]) => x + Number(v.cost), 0);
+                                                return (
+                                                    <div key={s.tag} className="p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)]">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: s.color }}></span>
+                                                            <span className="flex-1 min-w-0 truncate font-medium">{s.name}</span>
+                                                            {s.mine && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--cost-bg)] text-[var(--text-secondary)] flex-shrink-0">{t.thisDevice}</span>}
+                                                            <span className="font-mono text-xs text-[var(--text-secondary)] flex-shrink-0">{fmt$(s.cost)}</span>
+                                                        </div>
+                                                        {entries.length === 0 ? (
+                                                            <div className="text-xs text-[var(--text-secondary)]">{t.noModelData}</div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="w-full h-2 rounded-full overflow-hidden flex bg-[var(--border-color)]">
+                                                                    {entries.map(([id, v]) => (
+                                                                        <div key={id} style={{ width: `${(Number(v.cost) / tot) * 100}%`, background: modelColor(id) }}
+                                                                            title={`${modelName(id)} — ${fmt$(v.cost)}`}></div>
+                                                                    ))}
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                                                                    {entries.slice(0, 6).map(([id, v]) => (
+                                                                        <span key={id} className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
+                                                                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: modelColor(id) }}></span>
+                                                                            <span className="truncate max-w-[130px]">{modelName(id)}</span>
+                                                                            <span className="opacity-60 flex-shrink-0">{Math.round((Number(v.cost) / tot) * 100)}%</span>
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                            {usageBars.segs.length === 0 && (
+                                                <div className="text-[var(--text-secondary)] py-6 text-center">{t.noDeviceData}</div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {statsOpen ? null : usageBars.segs.length === 0 ? (
                                         <div className="text-[var(--text-secondary)] py-6 text-center">{t.noDeviceData}</div>
                                     ) : (
                                         <div className="space-y-2">
                                             {usageBars.segs.map(s => (
-                                                <div key={s.device} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)]">
-                                                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: s.color }}></span>
+                                                <div key={s.tag} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)]">
+                                                    {s.mine ? (
+                                                        <input type="color" className="dot-color w-4 h-4 flex-shrink-0" value={s.color}
+                                                            onChange={(e) => changeMyColor(e.target.value)} title={t.yourColor} />
+                                                    ) : (
+                                                        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: s.color }}></span>
+                                                    )}
                                                     <div className="flex-1 min-w-0">
                                                         <div className="font-medium truncate flex items-center gap-2">
                                                             {s.name}
@@ -1585,20 +1817,11 @@
                                             Чтобы вернуть системные инструкции — см. openMemoryModal / isMemoryModalOpen ниже. */}
                                         <div className="space-y-4">
                                             <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">{t.settingsAppearance}</h3>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm mb-2 font-medium">{t.theme}</label>
-                                                    <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
-                                                        <button onClick={() => setTempTheme('light')} className={`flex-1 py-2 rounded-lg text-sm ${tempTheme === 'light' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Light</button>
-                                                        <button onClick={() => setTempTheme('dark')} className={`flex-1 py-2 rounded-lg text-sm ${tempTheme === 'dark' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Dark</button>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm mb-2 font-medium">{t.language}</label>
-                                                    <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
-                                                        <button onClick={() => setTempLanguage('ru')} className={`flex-1 py-2 rounded-lg text-sm ${tempLanguage === 'ru' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Русский</button>
-                                                        <button onClick={() => setTempLanguage('da')} className={`flex-1 py-2 rounded-lg text-sm ${tempLanguage === 'da' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Dansk</button>
-                                                    </div>
+                                            <div>
+                                                <label className="block text-sm mb-2 font-medium">{t.theme}</label>
+                                                <div className="flex gap-1 p-1 bg-[var(--bg-sidebar)] rounded-xl border border-[var(--border-color)]">
+                                                    <button onClick={() => setTempTheme('light')} className={`flex-1 py-2 rounded-lg text-sm ${tempTheme === 'light' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Light</button>
+                                                    <button onClick={() => setTempTheme('dark')} className={`flex-1 py-2 rounded-lg text-sm ${tempTheme === 'dark' ? 'bg-[var(--bg-body)] font-medium' : 'text-[var(--text-secondary)]'}`}>Dark</button>
                                                 </div>
                                             </div>
                                             <div>
@@ -1620,7 +1843,7 @@
                                                 <input type="password" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} placeholder={t.apiKeyPlaceholder} className="w-full p-3.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] focus:outline-none focus:border-[var(--accent-blue)] font-mono text-sm" />
                                                 <div className="text-xs mt-2 flex items-center gap-2">
                                                     {keyInfo.kind === 'code' && (
-                                                        <span className="text-[var(--accent-blue)]">✓ {t.codeAccepted}{keyInfo.label ? ` — ${keyInfo.label}` : ''}</span>
+                                                        <span className="text-[var(--accent-blue)]">{t.codeAccepted}{keyInfo.label ? ` - ${keyInfo.label}` : ''}</span>
                                                     )}
                                                     {keyInfo.kind === 'bad' && <span className="text-red-400">{t.codeUnknown}</span>}
                                                     {keyInfo.kind === 'checking' && <span className="text-[var(--text-secondary)]">{t.codeChecking}</span>}
@@ -2059,6 +2282,11 @@
                         {/* композер */}
                         <div className="absolute bottom-0 left-0 right-0 bg-[var(--bg-body)] p-4 pb-6">
                             <div className="max-w-[760px] mx-auto relative">
+                                {keyInfo.guest && (
+                                    <div className="mb-2 px-3 py-2 rounded-xl bg-[var(--cost-bg)] border border-[var(--border-color)] text-[11px] leading-snug text-[var(--text-secondary)]">
+                                        {t.guestNotice}
+                                    </div>
+                                )}
                                 {attachments.length > 0 && (
                                     <div className="flex gap-3 mb-3 px-2 overflow-x-auto scrollbar-slim">
                                         {attachments.map((att, i) => (
